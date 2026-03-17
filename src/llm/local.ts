@@ -1,17 +1,31 @@
 import { config } from '@/lib/config';
 import { logger } from '@/lib/logger';
 import { SearchError } from '@/lib/errors';
-import type { ScoredChunk } from '@/storage/vector';
+import type { SearchResult } from '@/search/semantic';
+
+/**
+ * Formats a date to a readable string (e.g., "Mar 17, 2026").
+ * @param date ISO 8601 date string or Date object
+ * @returns Formatted date string
+ */
+function formatDate(date: string | Date): string {
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return 'Unknown date';
+  }
+}
 
 /**
  * Generates an answer to a query using a local Ollama LLM, citing provided sources.
  * Falls back to local inference when the Anthropic API is unavailable.
  * @param query User's question
- * @param sources Array of scored chunks from semantic search
+ * @param sources Array of search results from semantic search
  * @returns LLM-generated answer with inline citations
  * @throws SearchError on API failure or configuration issues
  */
-export async function generateAnswerLocal(query: string, sources: ScoredChunk[]): Promise<string> {
+export async function generateAnswerLocal(query: string, sources: SearchResult[]): Promise<string> {
   if (!query || query.trim().length === 0) {
     throw new SearchError('Query cannot be empty', 'EMPTY_QUERY');
   }
@@ -28,8 +42,8 @@ export async function generateAnswerLocal(query: string, sources: ScoredChunk[])
     // Build source citations for the prompt
     const sourcesList = sources
       .map((source, index) => {
-        const sourceTitle = source.id || 'Unknown source';
-        return `[${index + 1}] ${sourceTitle}\n${source.content}`;
+        const sourceInfo = `${source.title}${source.url ? ` (${source.url})` : ''} - ${formatDate(source.createdAt)}`;
+        return `[${index + 1}] ${sourceInfo}\n${source.excerpt}`;
       })
       .join('\n\n');
 

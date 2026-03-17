@@ -1,4 +1,5 @@
 import { SearchError } from '@/lib/errors';
+import type { SearchResult } from '@/search/semantic';
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -33,23 +34,26 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Information about topic A',
+          title: 'About Topic A',
+          type: 'URL',
+          excerpt: 'Information about topic A',
+          score: 0.95,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.95,
           createdAt: new Date('2024-01-15'),
+          url: 'https://example1.com',
         },
         {
-          id: 'chunk-2',
           sourceId: 'src-2',
-          content: 'Information about topic B',
+          title: 'About Topic B',
+          type: 'PDF',
+          excerpt: 'Information about topic B',
+          score: 0.87,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.87,
           createdAt: new Date('2024-01-16'),
         },
       ];
@@ -83,14 +87,15 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'First source content',
+          title: 'First Source',
+          type: 'TEXT',
+          excerpt: 'First source content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -118,14 +123,15 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -141,14 +147,15 @@ describe('llm/local (Ollama)', () => {
     it('should throw on connection error', async () => {
       (global.fetch as jest.Mock).mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -169,14 +176,15 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -202,14 +210,15 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -222,14 +231,15 @@ describe('llm/local (Ollama)', () => {
     });
 
     it('should throw on empty query', async () => {
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -297,32 +307,36 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Source 1 content',
+          title: 'Source 1',
+          type: 'URL',
+          excerpt: 'Source 1 content',
+          score: 0.95,
           chunkIndex: 0,
           pageNumber: 1,
-          score: 0.95,
           createdAt: new Date(),
+          url: 'https://example1.com',
         },
         {
-          id: 'chunk-2',
           sourceId: 'src-2',
-          content: 'Source 2 content',
+          title: 'Source 2',
+          type: 'PDF',
+          excerpt: 'Source 2 content',
+          score: 0.85,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.85,
           createdAt: new Date(),
         },
         {
-          id: 'chunk-3',
           sourceId: 'src-3',
-          content: 'Source 3 content',
+          title: 'Source 3',
+          type: 'TEXT',
+          excerpt: 'Source 3 content',
+          score: 0.75,
           chunkIndex: 1,
           pageNumber: 2,
-          score: 0.75,
           createdAt: new Date(),
         },
       ];
@@ -355,14 +369,15 @@ describe('llm/local (Ollama)', () => {
 
       (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse);
 
-      const sources = [
+      const sources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];

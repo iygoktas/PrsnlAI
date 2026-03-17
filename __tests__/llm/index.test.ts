@@ -1,4 +1,5 @@
 import { SearchError } from '@/lib/errors';
+import type { SearchResult } from '@/search/semantic';
 
 // Mock the LLM providers before importing the index
 jest.mock('@/llm/anthropic', () => ({
@@ -27,14 +28,15 @@ describe('llm/index (provider selector)', () => {
 
   describe('generateAnswer()', () => {
     it('should use anthropic provider by default', async () => {
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -49,14 +51,15 @@ describe('llm/index (provider selector)', () => {
     });
 
     it('should call anthropic provider when LLM_PROVIDER is anthropic', async () => {
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -70,14 +73,15 @@ describe('llm/index (provider selector)', () => {
     });
 
     it('should call local provider when mocked as local', async () => {
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -92,14 +96,15 @@ describe('llm/index (provider selector)', () => {
     });
 
     it('should propagate anthropic provider errors', async () => {
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Test content',
+          title: 'Test Source',
+          type: 'TEXT',
+          excerpt: 'Test content',
+          score: 0.9,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.9,
           createdAt: new Date(),
         },
       ];
@@ -115,23 +120,26 @@ describe('llm/index (provider selector)', () => {
     });
 
     it('should work with multiple sources', async () => {
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Content 1',
+          title: 'Source 1',
+          type: 'URL',
+          excerpt: 'Content 1',
+          score: 0.95,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.95,
           createdAt: new Date(),
+          url: 'https://example1.com',
         },
         {
-          id: 'chunk-2',
           sourceId: 'src-2',
-          content: 'Content 2',
+          title: 'Source 2',
+          type: 'PDF',
+          excerpt: 'Content 2',
+          score: 0.85,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.85,
           createdAt: new Date(),
         },
       ];
@@ -155,14 +163,15 @@ describe('llm/index (provider selector)', () => {
 
     it('should pass query and sources through to provider', async () => {
       const query = 'What is the meaning of life?';
-      const mockSources = [
+      const mockSources: SearchResult[] = [
         {
-          id: 'chunk-1',
           sourceId: 'src-1',
-          content: 'Life is 42',
+          title: 'Life Source',
+          type: 'TEXT',
+          excerpt: 'Life is 42',
+          score: 0.99,
           chunkIndex: 0,
           pageNumber: null,
-          score: 0.99,
           createdAt: new Date(),
         },
       ];

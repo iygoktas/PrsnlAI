@@ -54,6 +54,12 @@ export async function search(query: string, options?: SearchOptions): Promise<Se
     logger.debug(`After reranking: ${rerankedResults.length} results`);
 
     // Step 3: Generate answer
+    if (rerankedResults.length === 0) {
+      return {
+        answer: "I couldn't find any relevant information in your knowledge base to answer that question.",
+        sources: [],
+      };
+    }
     const answer = await generateAnswer(query, rerankedResults);
     logger.info(`Search complete: generated answer with ${rerankedResults.length} sources`);
 

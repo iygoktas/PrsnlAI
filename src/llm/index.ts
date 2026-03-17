@@ -1,7 +1,7 @@
 import { config } from '@/lib/config';
 import { logger } from '@/lib/logger';
 import { SearchError } from '@/lib/errors';
-import type { ScoredChunk } from '@/storage/vector';
+import type { SearchResult } from '@/search/semantic';
 import { generateAnswer as generateAnswerAnthropic } from '@/llm/anthropic';
 import { generateAnswerLocal } from '@/llm/local';
 
@@ -9,11 +9,11 @@ import { generateAnswerLocal } from '@/llm/local';
  * Generates an answer to a query using the configured LLM provider.
  * Routes to either Anthropic or Ollama based on LLM_PROVIDER config.
  * @param query User's question
- * @param sources Array of scored chunks from semantic search
+ * @param sources Array of search results from semantic search
  * @returns LLM-generated answer with inline citations
  * @throws SearchError on provider error or invalid configuration
  */
-export async function generateAnswer(query: string, sources: ScoredChunk[]): Promise<string> {
+export async function generateAnswer(query: string, sources: SearchResult[]): Promise<string> {
   const provider = config.LLM_PROVIDER;
   logger.debug(`Using LLM provider: ${provider}`);
 

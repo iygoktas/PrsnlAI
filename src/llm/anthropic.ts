@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '@/lib/config';
 import { logger } from '@/lib/logger';
 import { SearchError } from '@/lib/errors';
-import type { ScoredChunk } from '@/storage/vector';
+import type { SearchResult } from '@/search/semantic';
 
 /**
  * Initializes and returns an Anthropic API client.
@@ -35,11 +35,11 @@ function formatDate(date: string | Date): string {
  * Generates an answer to a query using the Anthropic API, citing provided sources.
  * Uses the claude-haiku model for cost-effective RAG responses.
  * @param query User's question
- * @param sources Array of scored chunks from semantic search
+ * @param sources Array of search results from semantic search
  * @returns LLM-generated answer with inline citations
  * @throws SearchError on API failure or configuration issues
  */
-export async function generateAnswer(query: string, sources: ScoredChunk[]): Promise<string> {
+export async function generateAnswer(query: string, sources: SearchResult[]): Promise<string> {
   if (!query || query.trim().length === 0) {
     throw new SearchError('Query cannot be empty', 'EMPTY_QUERY');
   }
@@ -50,8 +50,8 @@ export async function generateAnswer(query: string, sources: ScoredChunk[]): Pro
     // Build source citations for the prompt
     const sourcesList = sources
       .map((source, index) => {
-        const sourceTitle = source.id || 'Unknown source';
-        return `[${index + 1}] ${sourceTitle}\n${source.content}`;
+        const sourceInfo = `${source.title}${source.url ? ` (${source.url})` : ''} - ${formatDate(source.createdAt)}`;
+        return `[${index + 1}] ${sourceInfo}\n${source.excerpt}`;
       })
       .join('\n\n');
 
