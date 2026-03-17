@@ -93,7 +93,7 @@
   - Closes browser; throws `IngestionError` with reason on failure
   - Integration test against `https://example.com`
 
-- [ ] **T-020** Write `src/ingestion/index.ts`
+- [x] **T-020** Write `src/ingestion/index.ts`
   - `ingest(input: IngestionInput): Promise<IngestionResult>` factory
   - Routes to correct parser based on `input.type`
   - Calls `chunker` → `embed` → `saveDocument` pipeline

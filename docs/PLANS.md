@@ -226,3 +226,15 @@
 5. Call chunker → embed → saveDocument pipeline; handle errors with cleanup
 6. Write `__tests__/ingestion/index.test.ts` with mocked sub-modules covering: URL/PDF/text routing, full pipeline, error handling
 
+---
+
+## T-021: Write `src/llm/anthropic.ts`
+
+**Steps:**
+1. Create `src/llm/anthropic.ts` exporting `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
+2. Instantiate Anthropic SDK client with `ANTHROPIC_API_KEY` from config
+3. Build prompt using template from ARCHITECTURE.md with formatted sources (numbered [1], [2], etc.)
+4. Format source dates (ISO 8601 to readable format) and titles in the prompt
+5. Call `client.messages.create()` with model from config (`ANTHROPIC_MODEL`), throw `SearchError` on API failures
+6. Write `__tests__/llm/anthropic.test.ts` with mocked Anthropic client covering: successful answer generation, API errors, no sources
+
