@@ -57,6 +57,17 @@
 
 ---
 
+## T-009: Configure .gitignore, ESLint, Prettier, and npm scripts
+
+**Steps:**
+1. Verify `.gitignore` contains: node_modules, .env, .next/, uploads/, and .claude/
+2. Verify `package.json` has all required scripts: dev, build, start, lint, typecheck, test, db:migrate, db:seed
+3. Verify `.eslintrc.json` extends next/core-web-vitals and next/typescript
+4. Create `.prettierrc.json` with standard formatting rules (semi, singleQuote, trailingComma, printWidth, tabWidth)
+5. All configuration files in place and consistent
+
+---
+
 ## T-005: Write src/lib/config.ts — Zod-parsed env variables
 
 **Steps:**
