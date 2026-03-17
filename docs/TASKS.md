@@ -45,7 +45,7 @@
 
 ## Phase 2 — Storage layer
 
-- [ ] **T-014** Write `src/storage/metadata.ts`
+- [x] **T-014** Write `src/storage/metadata.ts`
   - `createSource(data: CreateSourceInput): Promise<Source>`
   - `getSource(id: string): Promise<Source | null>`
   - `listSources(filter?: SourceFilter): Promise<Source[]>`
