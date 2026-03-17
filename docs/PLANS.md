@@ -108,3 +108,14 @@
 4. Write `__tests__/embedding/chunker.test.ts` with tests for: short text, long text with overlap, empty string, single-word input
 5. Run tests; if passing, commit with type `feat(embedding)`
 
+---
+
+## T-011: Write src/embedding/openai.ts
+
+**Steps:**
+1. Create `src/embedding/openai.ts` — export `embedWithOpenAI(texts: string[]): Promise<number[][]>`
+2. Batch input in groups of 100; call OpenAI `embeddings.create` with model `text-embedding-3-small`
+3. Implement exponential backoff for 429 rate-limit errors (up to 5 retries, starting at 1 s)
+4. Throw `EmbeddingError` on non-retryable failures; require `OPENAI_API_KEY` via config
+5. Write `__tests__/embedding/openai.test.ts` with mocked OpenAI client covering: successful batch, rate-limit retry, final failure after max retries
+
