@@ -3,74 +3,69 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #0d0d0d;
-  --color-surface: #111111;
-  --color-border: #2a2a2a;
-  --color-text: #f2f0eb;
-  --color-muted: #8b8b8b;
-  --color-accent: #c8922a;
+  --bg-base:        #1C1B1F;
+  --bg-surface:     #2A2831;
+  --bg-elevated:    #332F3D;
+  --border:         #3D3A47;
+  --text-primary:   #E6E1E5;
+  --text-secondary: #CAC4D0;
+  --text-muted:     #938F99;
+  --accent:         #D0BCFF;
+  --accent-dim:     #4A4458;
+  --success:        #6DD58C;
+  --error:          #F2B8B5;
+  --font-inter:     'Inter', sans-serif;
 }
 
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50;
-    font-family: var(--font-mono, Arial, sans-serif);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-inter, 'Inter', sans-serif);
+    font-size: 15px;
+    line-height: 1.5;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-mono font-bold tracking-tight;
-  }
-
-  h1 {
-    @apply text-3xl;
-  }
-
-  h2 {
-    @apply text-2xl;
-  }
-
-  h3 {
-    @apply text-xl;
+  /* Remove default Tailwind base styles for inputs/buttons so our custom styles work */
+  input, textarea, button, select {
+    font-family: inherit;
+    font-size: inherit;
   }
 
   a {
-    @apply text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline;
+    color: var(--accent);
+    text-decoration: none;
   }
 
-  button {
-    @apply rounded-lg px-4 py-2 font-medium transition-colors;
+  a:hover {
+    text-decoration: underline;
   }
 
-  input,
-  textarea {
-    @apply rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50 dark:placeholder-gray-400;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  input:focus,
-  textarea:focus {
-    @apply outline-none ring-2 ring-blue-500 dark:ring-blue-400;
-  }
-}
-
-@layer components {
-  .card {
-    @apply rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800;
+  ::-webkit-scrollbar-track {
+    background: var(--bg-elevated);
   }
 
-  .badge {
-    @apply inline-block rounded-full bg-gray-200 px-3 py-1 text-sm font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200;
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
   }
 
-  .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600;
-  }
-
-  .btn-secondary {
-    @apply border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50 dark:hover:bg-gray-700;
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 }

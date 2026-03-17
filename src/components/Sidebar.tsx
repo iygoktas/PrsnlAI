@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Globe, FileText, AlignLeft, Plus } from 'lucide-react';
 import type { Source } from '@prisma/client';
 
@@ -19,173 +19,205 @@ export default function Sidebar({
   selectedSourceId,
 }: SidebarProps) {
   const getTypeIcon = (type: string) => {
+    const s: React.CSSProperties = { color: 'var(--text-muted)', width: 14, height: 14, flexShrink: 0 };
     switch (type) {
-      case 'URL':
-        return <Globe size={16} />;
-      case 'PDF':
-        return <FileText size={16} />;
-      case 'TEXT':
-        return <AlignLeft size={16} />;
-      default:
-        return <FileText size={16} />;
+      case 'URL': return <Globe style={s} />;
+      case 'PDF': return <FileText style={s} />;
+      default:    return <AlignLeft style={s} />;
     }
   };
 
   const getDomain = (source: Source) => {
     if (!source.url) return 'Local';
-    try {
-      const url = new URL(source.url);
-      return url.hostname;
-    } catch {
-      return 'Unknown';
-    }
+    try { return new URL(source.url).hostname; }
+    catch { return 'Local'; }
   };
 
   const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - new Date(date).getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 30) return `${diffDays}d ago`;
-    if (diffDays < 365) {
-      const months = Math.floor(diffDays / 30);
-      return `${months}mo ago`;
-    }
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-    });
+    const diffMs = Date.now() - new Date(date).getTime();
+    const d = Math.floor(diffMs / 86400000);
+    if (d === 0) return 'Today';
+    if (d === 1) return 'Yesterday';
+    if (d < 30) return `${d}d ago`;
+    const m = Math.floor(d / 30);
+    if (m < 12) return `${m}mo ago`;
+    return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
   };
 
   return (
     <div
-      className="fixed left-0 top-0 h-screen w-80 overflow-y-auto border-r"
       style={{
-        backgroundColor: 'var(--color-bg)',
-        borderColor: 'var(--color-border)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100vh',
+        width: '320px',
+        overflowY: 'auto',
+        backgroundColor: 'var(--bg-surface)',
+        borderRight: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Header */}
       <div
-        className="sticky top-0 flex items-center justify-between border-b px-4 py-4"
         style={{
-          backgroundColor: 'var(--color-bg)',
-          borderColor: 'var(--color-border)',
+          position: 'sticky',
+          top: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 16px',
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-surface)',
+          zIndex: 1,
         }}
       >
-        <h1
-          className="italic text-sm"
+        <span
           style={{
-            fontFamily: 'var(--font-serif)',
-            color: 'var(--color-text)',
+            fontSize: '13px',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
           }}
         >
           memex
-        </h1>
+        </span>
         <button
           onClick={onAddClick}
-          className="rounded p-1 transition-colors duration-150"
+          aria-label="Add content"
           style={{
-            color: 'var(--color-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            border: '1px solid var(--border)',
+            backgroundColor: 'transparent',
+            color: 'var(--text-muted)',
+            cursor: 'pointer',
+            transition: 'all 150ms ease',
+            padding: 0,
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              'var(--color-border)';
+            const btn = e.currentTarget;
+            btn.style.backgroundColor = 'var(--bg-elevated)';
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.color = 'var(--accent)';
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              'transparent';
+            const btn = e.currentTarget;
+            btn.style.backgroundColor = 'transparent';
+            btn.style.borderColor = 'var(--border)';
+            btn.style.color = 'var(--text-muted)';
           }}
-          aria-label="Add content"
         >
-          <Plus size={18} />
+          <Plus size={14} />
         </button>
       </div>
 
-      {/* Sources List */}
+      {/* Sources list */}
       {sources.length === 0 ? (
         <div
-          className="flex items-center justify-center px-4 py-16 text-center"
           style={{
-            fontFamily: 'var(--font-serif)',
-            color: 'var(--color-muted)',
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '32px 20px',
+            textAlign: 'center',
           }}
         >
-          <p className="italic">No sources yet. Add a URL, PDF, or text.</p>
-        </div>
-      ) : (
-        <div className="space-y-0">
-          {sources.map((source) => (
-            <div
-              key={source.id}
-              className="h-12 cursor-pointer border-l-4 border-l-transparent px-4 py-3 transition-all duration-150"
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            No sources yet.{' '}
+            <button
+              onClick={onAddClick}
               style={{
-                backgroundColor:
-                  selectedSourceId === source.id
-                    ? 'var(--color-surface)'
-                    : 'transparent',
-                borderLeftColor:
-                  selectedSourceId === source.id
-                    ? 'var(--color-accent)'
-                    : 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedSourceId !== source.id) {
-                  (e.currentTarget as HTMLDivElement).style.backgroundColor =
-                    '#1A1A1A';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedSourceId !== source.id) {
-                  (e.currentTarget as HTMLDivElement).style.backgroundColor =
-                    'transparent';
-                }
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontFamily: 'inherit',
               }}
             >
-              <div className="flex items-start gap-2">
-                <div
-                  style={{
-                    color: 'var(--color-muted)',
-                    flexShrink: 0,
-                    marginTop: '2px',
-                  }}
-                >
-                  {getTypeIcon(source.type)}
-                </div>
-                <div className="flex-1 overflow-hidden">
+              Add a URL, PDF, or text.
+            </button>
+          </p>
+        </div>
+      ) : (
+        <div style={{ flex: 1 }}>
+          {sources.map((source) => {
+            const isSelected = selectedSourceId === source.id;
+            return (
+              <div
+                key={source.id}
+                style={{
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 16px',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  borderLeft: isSelected
+                    ? '3px solid var(--accent)'
+                    : '3px solid transparent',
+                  backgroundColor: isSelected ? 'var(--bg-elevated)' : 'transparent',
+                  transition: 'all 150ms ease',
+                  overflow: 'hidden',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--bg-elevated)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                {getTypeIcon(source.type)}
+                <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
                   <div
-                    className="truncate text-xs"
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--color-text)',
+                      fontSize: '13px',
+                      color: 'var(--text-primary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {source.title}
                   </div>
                   <div
-                    className="truncate text-xs"
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--color-muted)',
+                      fontSize: '12px',
+                      color: 'var(--text-muted)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {getDomain(source)}
                   </div>
                 </div>
                 <div
-                  className="flex-shrink-0 text-xs"
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--color-muted)',
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    flexShrink: 0,
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   {formatDate(source.createdAt)}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

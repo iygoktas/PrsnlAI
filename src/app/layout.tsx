@@ -1,27 +1,21 @@
-import type { Metadata } from "next";
-import { Instrument_Serif, IBM_Plex_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const instrumentSerif = Instrument_Serif({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-serif",
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
   title: "Personal AI Knowledge Base",
   description: "Your personal digital memory system",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -31,14 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${instrumentSerif.variable} ${ibmPlexMono.variable} antialiased`}
-        style={{
-          backgroundColor: "var(--color-bg)",
-          color: "var(--color-text)",
-          fontFamily: "var(--font-mono)",
-        }}
-      >
+      <body className={`${inter.variable} antialiased`}>
         {children}
       </body>
     </html>

@@ -4,47 +4,41 @@ import React from 'react';
 import { type SearchResult } from '@/search/semantic';
 
 interface SearchResultsProps {
-  /**
-   * LLM-generated answer to the search query
-   */
   answer: string;
-
-  /**
-   * Array of source chunks used to generate the answer
-   */
   sources: SearchResult[];
 }
 
 /**
- * AnswerBlock component — displays answer and sources in two zones
+ * AnswerBlock component — answer zone with amber left border + sources zone below
  */
 export function SearchResults({ answer, sources }: SearchResultsProps) {
   return (
     <div
-      className="w-full mt-8 animate-fade-in"
       style={{
+        width: '100%',
+        marginTop: '32px',
         animation: 'fadeIn 0.2s ease forwards',
       }}
     >
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
 
       {/* Answer zone */}
       <div
-        className="border-l-2 pl-4 py-6"
         style={{
-          borderColor: 'var(--color-accent)',
+          borderLeft: '3px solid var(--accent)',
+          paddingLeft: '16px',
+          paddingTop: '4px',
+          paddingBottom: '4px',
         }}
       >
         <p
-          className="text-base leading-relaxed whitespace-pre-wrap"
+          className="whitespace-pre-wrap"
           style={{
-            fontFamily: 'var(--font-serif)',
-            color: 'var(--color-text)',
+            fontSize: '15px',
+            lineHeight: 1.75,
+            color: 'var(--text-primary)',
           }}
         >
           {answer.split(/\[\d+\]/).map((text, index) => (
@@ -52,12 +46,12 @@ export function SearchResults({ answer, sources }: SearchResultsProps) {
               {text}
               {index < sources.length && (
                 <sup
-                  className="ml-1"
                   style={{
-                    color: 'var(--color-accent)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.75em',
-                    fontWeight: '500',
+                    color: 'var(--accent)',
+                    fontSize: '0.72em',
+                    fontWeight: 600,
+                    marginLeft: '2px',
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   [{index + 1}]
@@ -70,17 +64,19 @@ export function SearchResults({ answer, sources }: SearchResultsProps) {
 
       {/* Sources zone */}
       {sources.length > 0 && (
-        <div className="mt-8">
-          <h3
-            className="text-xs mb-4 uppercase tracking-widest"
+        <div style={{ marginTop: '28px' }}>
+          <div
             style={{
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-muted)',
+              fontSize: '11px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              marginBottom: '12px',
             }}
           >
-            SOURCES
-          </h3>
-          <div className="flex flex-wrap gap-2">
+            Sources
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {sources.map((source, index) => (
               <SourceCard
                 key={`${source.sourceId}-${source.chunkIndex}`}
@@ -95,9 +91,6 @@ export function SearchResults({ answer, sources }: SearchResultsProps) {
   );
 }
 
-/**
- * SourceCard component — compact source display in sources zone
- */
 function SourceCard({
   source,
   citationNumber,
@@ -106,38 +99,58 @@ function SourceCard({
   citationNumber: number;
 }) {
   const scorePercent = Math.round(source.score * 100);
-  const truncatedTitle = source.title.length > 40
-    ? source.title.substring(0, 40) + '…'
-    : source.title;
+  const truncatedTitle =
+    source.title.length > 40 ? source.title.substring(0, 40) + '…' : source.title;
 
   return (
     <a
       href={source.url || '#'}
       target={source.url ? '_blank' : undefined}
       rel={source.url ? 'noopener noreferrer' : undefined}
-      className="border rounded-sm px-3 py-2 transition-all duration-150 inline-block"
       style={{
-        borderColor: 'var(--color-border)',
-        backgroundColor: 'transparent',
+        display: 'inline-block',
+        backgroundColor: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        padding: '8px 12px',
+        textDecoration: 'none',
+        transition: 'border-color 150ms ease',
+        cursor: 'pointer',
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--color-accent)';
+        (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent)';
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--color-border)';
+        (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)';
       }}
     >
       <div
-        className="flex items-center gap-2 text-xs"
         style={{
-          fontFamily: 'var(--font-mono)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '13px',
         }}
       >
-        <span style={{ color: 'var(--color-accent)', fontWeight: '500' }}>
+        <span
+          style={{
+            color: 'var(--accent)',
+            fontWeight: 600,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           [{citationNumber}]
         </span>
-        <span style={{ color: 'var(--color-text)' }}>{truncatedTitle}</span>
-        <span style={{ color: 'var(--color-muted)' }}>{scorePercent}%</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{truncatedTitle}</span>
+        <span
+          style={{
+            color: 'var(--accent)',
+            fontVariantNumeric: 'tabular-nums',
+            fontSize: '12px',
+          }}
+        >
+          {scorePercent}%
+        </span>
       </div>
     </a>
   );

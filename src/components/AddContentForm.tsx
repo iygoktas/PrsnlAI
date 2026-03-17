@@ -11,26 +11,30 @@ interface AddContentFormProps {
 type Tab = 'url' | 'text' | 'pdf';
 
 /**
- * AddContentForm component — modal overlay for ingesting new content
+ * AddContentForm — modal overlay for ingesting new content
  */
 export function AddContentForm({ onClose, onSuccess }: AddContentFormProps) {
   const [activeTab, setActiveTab] = useState<Tab>('url');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [toast, setToast] = useState<{
-    type: 'success' | 'error';
-    message: string;
-  } | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Form state
   const [urlValue, setUrlValue] = useState('');
   const [textValue, setTextValue] = useState('');
   const [fileValue, setFileValue] = useState<File | null>(null);
+
+  const isValid = (() => {
+    if (activeTab === 'url') return urlValue.trim().length > 0;
+    if (activeTab === 'text') return textValue.trim().length > 0;
+    if (activeTab === 'pdf') return fileValue !== null;
+    return false;
+  })();
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     if (type === 'success') {
       setTimeout(() => {
+        setToast(null);
         onClose();
       }, 1200);
     }
@@ -39,40 +43,24 @@ export function AddContentForm({ onClose, onSuccess }: AddContentFormProps) {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (!isValid || isLoading) return;
+
       setIsLoading(true);
       setProgress(0);
 
       try {
-        let content = '';
-        let type: 'url' | 'text' | 'pdf' | undefined;
-        let formData: FormData | undefined;
+        let response: Response;
 
-        if (activeTab === 'url' && urlValue.trim()) {
-          type = 'url';
-          content = urlValue.trim();
-        } else if (activeTab === 'text' && textValue.trim()) {
-          type = 'text';
-          content = textValue.trim();
-        } else if (activeTab === 'pdf' && fileValue) {
-          type = 'pdf';
-          formData = new FormData();
+        if (activeTab === 'pdf' && fileValue) {
+          const formData = new FormData();
           formData.append('type', 'pdf');
           formData.append('file', fileValue);
+          setProgress(30);
+          response = await fetch('/api/ingest', { method: 'POST', body: formData });
         } else {
-          showToast('error', 'Please fill in a field');
-          setIsLoading(false);
-          return;
-        }
-
-        setProgress(30);
-
-        let response: Response;
-        if (formData) {
-          response = await fetch('/api/ingest', {
-            method: 'POST',
-            body: formData,
-          });
-        } else {
+          const type = activeTab;
+          const content = activeTab === 'url' ? urlValue.trim() : textValue.trim();
+          setProgress(30);
           response = await fetch('/api/ingest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -81,238 +69,297 @@ export function AddContentForm({ onClose, onSuccess }: AddContentFormProps) {
         }
 
         setProgress(70);
-
         const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || `Error ${response.status}`);
-        }
+        if (!response.ok) throw new Error(data.error || `Error ${response.status}`);
 
         setProgress(100);
-        showToast(
-          'success',
-          `✓ "${data.title}" added — ${data.chunksCreated} chunks`
-        );
+        showToast('success', `"${data.title}" added — ${data.chunksCreated} chunks`);
 
-        // Reset form
         setUrlValue('');
         setTextValue('');
         setFileValue(null);
         onSuccess();
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An error occurred';
-        showToast('error', `✗ ${message}`);
+        showToast('error', message);
       } finally {
         setIsLoading(false);
       }
     },
-    [activeTab, urlValue, textValue, fileValue, onClose, onSuccess]
+    [activeTab, urlValue, textValue, fileValue, isValid, isLoading, onClose, onSuccess]
   );
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    backgroundColor: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    fontFamily: 'inherit',
+    caretColor: 'var(--accent)',
+    transition: 'border-color 150ms ease',
+  };
 
   return (
     <>
-      {/* Modal overlay */}
+      {/* Overlay */}
       <div
-        className="fixed inset-0 z-50 flex items-start justify-center pt-24"
         style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          paddingTop: '80px',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
         }}
         onClick={onClose}
       >
-        {/* Modal panel */}
+        {/* Panel */}
         <div
-          className="border rounded-sm p-6 w-full max-w-lg relative"
           style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
+            position: 'relative',
+            width: '100%',
+            maxWidth: '480px',
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '16px',
+            padding: '24px',
+            overflow: 'hidden',
           }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2
-              className="text-lg"
-              style={{
-                fontFamily: 'var(--font-serif)',
-                color: 'var(--color-text)',
-              }}
-            >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+            }}
+          >
+            <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
               Add Content
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded transition-colors"
               style={{
-                color: 'var(--color-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '28px',
+                height: '28px',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                padding: 0,
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  'var(--color-border)';
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--bg-elevated)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  'transparent';
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
               }}
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
 
           {/* Tabs */}
           <div
-            className="flex gap-6 mb-6 border-b"
             style={{
-              borderColor: 'var(--color-border)',
+              display: 'flex',
+              gap: '20px',
+              marginBottom: '20px',
+              borderBottom: '1px solid var(--border)',
             }}
           >
-            {(['url', 'text', 'pdf'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                disabled={isLoading}
-                className="pb-2 text-sm transition-colors uppercase"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  color:
-                    activeTab === tab
-                      ? 'var(--color-accent)'
-                      : 'var(--color-muted)',
-                  borderBottom:
-                    activeTab === tab ? '2px solid var(--color-accent)' : 'none',
-                  marginBottom: '-1px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isLoading ? 0.5 : 1,
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+            {(['url', 'text', 'pdf'] as const).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  disabled={isLoading}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                    padding: '0 0 10px 0',
+                    marginBottom: '-1px',
+                    fontSize: '13px',
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'inherit',
+                    transition: 'color 150ms ease',
+                    opacity: isLoading ? 0.5 : 1,
+                  }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* URL tab */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {activeTab === 'url' && (
-              <div>
-                <input
-                  type="url"
-                  value={urlValue}
-                  onChange={(e) => setUrlValue(e.target.value)}
-                  placeholder="https://example.com"
-                  disabled={isLoading}
-                  className="w-full bg-transparent outline-none pb-2 border-b"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text)',
-                    borderColor: 'var(--color-border)',
-                    caretColor: 'var(--color-accent)',
-                  }}
-                />
-              </div>
+              <input
+                type="url"
+                value={urlValue}
+                onChange={(e) => setUrlValue(e.target.value)}
+                placeholder="https://example.com"
+                disabled={isLoading}
+                style={inputStyle}
+                onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = 'var(--accent)'; }}
+                onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = 'var(--border)'; }}
+              />
             )}
 
-            {/* Text tab */}
             {activeTab === 'text' && (
-              <div>
-                <textarea
-                  value={textValue}
-                  onChange={(e) => setTextValue(e.target.value)}
-                  placeholder="Paste your text or markdown here..."
-                  disabled={isLoading}
-                  className="w-full bg-transparent outline-none pb-2 border-b resize-none h-32"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text)',
-                    borderColor: 'var(--color-border)',
-                    caretColor: 'var(--color-accent)',
-                  }}
-                />
-              </div>
+              <textarea
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+                placeholder="Paste your text or markdown here..."
+                disabled={isLoading}
+                rows={6}
+                style={{
+                  ...inputStyle,
+                  resize: 'vertical',
+                  minHeight: '120px',
+                }}
+                onFocus={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--accent)'; }}
+                onBlur={(e) => { (e.target as HTMLTextAreaElement).style.borderColor = 'var(--border)'; }}
+              />
             )}
 
-            {/* PDF tab */}
             {activeTab === 'pdf' && (
               <div>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setFileValue(e.files?.[0] || null)}
-                  disabled={isLoading}
-                  className="w-full bg-transparent outline-none pb-2 border-b"
+                <label
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.875rem',
-                    color: 'var(--color-text)',
-                    borderColor: 'var(--color-border)',
-                    caretColor: 'var(--color-accent)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '24px',
+                    backgroundColor: 'var(--bg-elevated)',
+                    border: `1px dashed ${fileValue ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: '8px',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    transition: 'border-color 150ms ease',
                   }}
-                />
-                {fileValue && (
-                  <p
-                    className="mt-2 text-xs"
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--color-muted)',
-                    }}
-                  >
-                    {fileValue.name}
-                  </p>
-                )}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--accent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!fileValue) (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--border)';
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    disabled={isLoading}
+                    style={{ display: 'none' }}
+                    onChange={(e) => setFileValue(e.target.files?.[0] ?? null)}
+                  />
+                  {fileValue ? (
+                    <>
+                      <span style={{ fontSize: '20px' }}>📄</span>
+                      <span style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: 500 }}>
+                        {fileValue.name}
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {(fileValue.size / 1024).toFixed(0)} KB — click to change
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '20px' }}>📁</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        Click to select a PDF
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        .pdf files only
+                      </span>
+                    </>
+                  )}
+                </label>
               </div>
             )}
 
-            {/* Submit button */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2 text-sm uppercase transition-colors"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  color: isLoading
-                    ? 'var(--color-muted)'
-                    : 'var(--color-accent)',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isLoading ? 0.5 : 1,
-                }}
-              >
-                {isLoading ? `Adding... ${progress}%` : 'Add'}
-              </button>
-            </div>
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={!isValid || isLoading}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: (!isValid || isLoading) ? 'var(--accent-dim)' : 'var(--accent)',
+                color: (!isValid || isLoading) ? 'var(--text-muted)' : '#1C1B1F',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: (!isValid || isLoading) ? 'not-allowed' : 'pointer',
+                opacity: (!isValid || isLoading) ? 0.5 : 1,
+                transition: 'all 150ms ease',
+                fontFamily: 'inherit',
+              }}
+            >
+              {isLoading ? `Adding… ${progress}%` : 'Add'}
+            </button>
           </form>
 
-          {/* Progress bar */}
+          {/* Progress bar at bottom of modal */}
           {isLoading && (
             <div
-              className="absolute bottom-0 left-0 right-0 h-px"
               style={{
-                backgroundColor: 'var(--color-accent)',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                height: '2px',
+                backgroundColor: 'var(--accent)',
                 width: `${progress}%`,
                 transition: 'width 0.3s ease',
-                borderRadius: '0 0 0.25rem 0',
+                borderRadius: '0 0 0 16px',
               }}
             />
           )}
         </div>
       </div>
 
-      {/* Toast notification */}
+      {/* Toast */}
       {toast && (
         <div
-          className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-sm text-sm border"
           style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-            fontFamily: 'var(--font-mono)',
-            color: toast.type === 'success' ? 'var(--color-accent)' : '#FF6B6B',
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 60,
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid var(--border)',
+            backgroundColor: 'var(--bg-surface)',
+            fontSize: '13px',
+            color: toast.type === 'success' ? 'var(--success)' : 'var(--error)',
+            maxWidth: '320px',
           }}
         >
-          {toast.message}
+          {toast.type === 'success' ? '✓ ' : '✗ '}{toast.message}
         </div>
       )}
     </>

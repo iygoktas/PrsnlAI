@@ -20,7 +20,7 @@ interface SearchBarProps {
 }
 
 /**
- * SearchBar component — underline-only style with animated loading indicator
+ * SearchBar component — rounded card style with spinner loading indicator
  */
 export function SearchBar({
   query,
@@ -29,19 +29,6 @@ export function SearchBar({
 }: SearchBarProps) {
   const [inputValue, setInputValue] = useState(query);
   const [isFocused, setIsFocused] = useState(false);
-  const [dotCount, setDotCount] = useState(0);
-
-  // Animate dots during loading
-  useEffect(() => {
-    if (!loading) {
-      setDotCount(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setDotCount((prev) => (prev + 1) % 4);
-    }, 300);
-    return () => clearInterval(interval);
-  }, [loading]);
 
   const handleSubmit = () => {
     if (inputValue.trim()) {
@@ -55,49 +42,75 @@ export function SearchBar({
     }
   };
 
-  const loadingDots = loading ? '.'.repeat(dotCount) : '';
-
   return (
     <div
-      className="w-full border-b"
       style={{
-        borderColor: 'var(--color-border)',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        backgroundColor: 'var(--bg-surface)',
+        border: `1px solid ${isFocused ? 'var(--accent)' : 'var(--border)'}`,
+        borderRadius: '12px',
+        padding: '14px 18px',
+        gap: '12px',
+        transition: 'border-color 150ms ease',
       }}
     >
-      <div className="relative flex items-center px-0 py-4">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder={`${loading ? '' : 'Ask anything about your sources…'}${loadingDots}`}
-          disabled={loading}
-          className="w-full bg-transparent outline-none"
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        placeholder="Ask anything about your sources…"
+        disabled={loading}
+        style={{
+          flex: 1,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: '15px',
+          color: 'var(--text-primary)',
+          caretColor: 'var(--accent)',
+          fontFamily: 'inherit',
+        }}
+        aria-label="Search query"
+      />
+
+      {/* Loading spinner or Enter hint */}
+      {loading ? (
+        <div
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.875rem',
-            color: 'var(--color-text)',
-            caretColor: 'var(--color-accent)',
-            paddingRight: isFocused ? '2rem' : '0',
-            transition: 'padding-right 0.15s ease',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            border: '2px solid var(--accent-dim)',
+            borderTopColor: 'var(--accent)',
+            flexShrink: 0,
+            animation: 'spin 0.7s linear infinite',
           }}
-          aria-label="Search query"
         />
-        {isFocused && !loading && (
-          <div
-            className="absolute right-0 flex items-center gap-1"
+      ) : (
+        isFocused && (
+          <span
             style={{
-              color: 'var(--color-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.75rem',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              flexShrink: 0,
+              userSelect: 'none',
             }}
           >
-            <span>↵</span>
-          </div>
-        )}
-      </div>
+            ↵
+          </span>
+        )
+      )}
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
