@@ -37,7 +37,7 @@
   - Same interface as openai.ts
   - Unit tests with mocked `fetch`
 
-- [ ] **T-013** Write `src/embedding/index.ts`
+- [x] **T-013** Write `src/embedding/index.ts`
   - Reads `EMBEDDING_PROVIDER` from config
   - Exports `embed(texts: string[]): Promise<number[][]>`
 
