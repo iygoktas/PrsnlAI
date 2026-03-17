@@ -1,111 +1,111 @@
 # PRD.md — Personal AI Knowledge Base
 
-## Vizyon
+## Vision
 
-Kişisel dijital hafıza sistemi. Her okuduğun makale, attığın not, kaydettiğin PDF, beğendiğin tweet — hepsi tek bir yere giriyor. Aylar sonra "o makaleyi nerede okumuştum?" dediğinde AI anında buluyor, context veriyor, bağlantılar kuruyor.
+A personal digital memory system. Every article you read, note you write, PDF you save, or tweet you bookmark flows into one place. Months later, when you ask "what was that paper I read about attention mechanisms?" — the AI finds it instantly, gives you context, and surfaces related content you forgot you had.
 
 ## Problem
 
-Mevcut çözümlerin hiçbiri tam olmuyor:
-- **Notion**: Manuel organizasyon gerektirir, AI arama yüzeysel
-- **Obsidian**: Teknik, sync zor, AI eklentileri kısıtlı
-- **Mem.ai**: Pahalı, export yok, vendor lock-in
-- **Readwise**: Sadece highlight'lar, bağlantı kurmaz
+Existing tools don't fully solve this:
+- **Notion**: Requires manual organization; AI search is shallow
+- **Obsidian**: Powerful but technical; sync is painful; AI plugins are limited
+- **Mem.ai**: Expensive; no export; vendor lock-in
+- **Readwise**: Only highlights; doesn't connect ideas across sources
 
-**Core problem:** Bilgi birikiyor ama erişilemiyor. Semantic bağlantılar insan tarafından elle kurulmak zorunda.
-
----
-
-## Kullanıcı (şimdilik: sadece sen)
-
-- Günde 5-15 içerik tüketiyor (makale, PDF, tweet, video)
-- Aktif not tutuyor
-- 3-6 ay sonra eski içeriklere referans veriyor
-- Terminal/kod ortamına alışkın, fancy UI gerekmez
+**Core problem:** Knowledge accumulates but stays inaccessible. Semantic connections have to be built by hand, which nobody actually does.
 
 ---
 
-## Kullanıcı hikayeleri
+## User (for now: just you)
 
-### Kritik (MVP'de olmalı)
-- [ ] **US-01**: Bir URL yapıştırıp "kaydet" diyebilmeliyim, sistem içeriği alıp indexlemeli
-- [ ] **US-02**: Türkçe veya İngilizce doğal dil sorusu sorabilmeliyim, sistem alakalı içerikleri getirmeli
-- [ ] **US-03**: PDF yükleyebilmeliyim, metin ve sayfa numarasıyla indexlemeli
-- [ ] **US-04**: Düz metin veya markdown not girebilmeliyim
-- [ ] **US-05**: Sorgu sonuçları hangi kaynaktan geldiğini göstermeli (kaynak, tarih, link)
-
-### Önemli (v1.1)
-- [ ] **US-06**: Tweet veya Twitter thread'i URL'siyle kaydedebilmeliyim
-- [ ] **US-07**: Browser extension ile tek tıkla sayfayı kaydedebilmeliyim
-- [ ] **US-08**: İki kaynak arasındaki bağlantıyı AI bulup göstermeli ("Bu makale şu notunla ilişkili")
-- [ ] **US-09**: Belirli bir konudaki tüm içeriklerimi özet olarak görmek istiyorum
-
-### Güzel olur (v2)
-- [ ] **US-10**: Görsel (screenshot, diagram) yükleyip içeriğini sorabilmeliyim
-- [ ] **US-11**: Yeni eklenen içerik, eski içeriklerle otomatik ilişkilendirilmeli ve bildirim gelmeli
-- [ ] **US-12**: Podcast/video transcript indexleme
+- Consumes 5–15 pieces of content per day (articles, PDFs, tweets, videos)
+- Takes active notes
+- References older content 3–6 months later
+- Comfortable in a terminal and code environment — no need for a polished UI
 
 ---
 
-## MVP kapsamı
+## User stories
 
-**Dahil:**
-- Web UI (basit, Next.js)
+### Critical (must be in MVP)
+- [ ] **US-01**: I can paste a URL and hit save — the system fetches and indexes the content
+- [ ] **US-02**: I can ask a natural language question in English or Turkish and get relevant results back
+- [ ] **US-03**: I can upload a PDF — it gets indexed with page numbers preserved
+- [ ] **US-04**: I can add a plain text or Markdown note
+- [ ] **US-05**: Search results show which source they came from (title, date, link)
+
+### Important (v1.1)
+- [ ] **US-06**: I can save a tweet or Twitter thread by pasting its URL
+- [ ] **US-07**: I can save any page with one click via a browser extension
+- [ ] **US-08**: The AI surfaces connections between sources ("This article relates to a note you saved in March")
+- [ ] **US-09**: I can get a summary of everything I've saved on a given topic
+
+### Nice to have (v2)
+- [ ] **US-10**: I can upload a screenshot or diagram and ask questions about it
+- [ ] **US-11**: When a new item is added, the system automatically links it to related existing content
+- [ ] **US-12**: Podcast and video transcript indexing
+
+---
+
+## MVP scope
+
+**In scope:**
+- Web UI (simple, Next.js)
 - URL ingestion (web scraping)
 - PDF ingestion
-- Düz metin / Markdown ingestion
-- Semantic search (doğal dil sorgu)
-- Kaynak gösterme (hangi belge, hangi bölüm)
+- Plain text / Markdown ingestion
+- Semantic search (natural language queries)
+- Source attribution (which document, which section)
 
-**Dahil değil (MVP sonrası):**
+**Out of scope (post-MVP):**
 - Browser extension
 - Twitter/X ingestion
-- Görsel anlama (OCR dışında)
-- Mobil uygulama
-- Çoklu kullanıcı
+- Visual understanding (beyond basic OCR)
+- Mobile app
+- Multi-user support
 
 ---
 
-## Başarı kriterleri
+## Success criteria
 
-- 100 belge indexlenmiş halde, sorgu 2 saniyenin altında yanıt vermeli
-- Sorgu sonuçları ilk 3 sonuçta doğru kaynağı %80+ oranında getirmeli
-- Yeni belge ekleme süreci 30 saniyenin altında olmalı (URL'den kaydetme dahil)
-- Hafıza: 10.000 belgeye kadar local çalışabilmeli
-
----
-
-## Kullanıcı akışları
-
-### URL kaydetme
-```
-Kullanıcı URL giriyor
-→ Sistem sayfayı scrape ediyor (Puppeteer)
-→ Temiz metin çıkarılıyor (boilerplate temizlenir)
-→ Chunk'lara bölünüyor (500 token, 50 token overlap)
-→ Her chunk embed ediliyor
-→ Vector DB'ye kaydediliyor
-→ Metadata (URL, başlık, tarih, domain) ayrıca kaydediliyor
-→ "Kaydedildi" onayı
-```
-
-### Soru sorma
-```
-Kullanıcı doğal dil sorusu giriyor
-→ Soru embed ediliyor
-→ Vector DB'de similarity search (top-k: 5)
-→ Bulunan chunk'lar + metadata LLM'e gönderiliyor
-→ LLM cevabı kaynak referanslarıyla üretiyor
-→ Kullanıcıya gösteriliyor
-```
+- With 100 documents indexed, queries return in under 2 seconds
+- The correct source appears in the top 3 results at least 80% of the time
+- Adding a new document (URL-to-indexed) takes under 30 seconds
+- The system runs locally and handles up to 10,000 documents without degradation
 
 ---
 
-## Bağımlılıklar ve riskler
+## Core user flows
 
-| Risk | Etki | Önlem |
-|------|------|-------|
-| OpenAI API maliyeti | Orta | İlk aşamada local model (Ollama) seçeneği sun |
-| Scraping'in engellenmesi | Düşük | Playwright + farklı user-agent stratejisi |
-| Vector DB boyutu | Düşük | pgvector ile Postgres içinde tut, ayrı DB gerekmez |
-| PDF parse kalitesi | Orta | PyMuPDF ile test et, sorunlu PDF'leri logla |
+### Saving a URL
+```
+User pastes URL
+→ System scrapes page (Playwright)
+→ Clean text extracted (boilerplate removed via Readability)
+→ Text split into chunks (512 tokens, 64-token overlap)
+→ Each chunk embedded
+→ Embeddings stored in Supabase (pgvector)
+→ Metadata saved (URL, title, date, domain)
+→ "Saved" confirmation shown
+```
+
+### Asking a question
+```
+User types natural language query
+→ Query is embedded
+→ Similarity search in vector DB (top-k: 5)
+→ Top chunks + their metadata sent to LLM
+→ LLM generates answer with inline source references
+→ Answer displayed with source cards below
+```
+
+---
+
+## Dependencies and risks
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| OpenAI API cost | Medium | Support local Ollama as a drop-in alternative |
+| Scraping blocked by target site | Low | Playwright + realistic user-agent rotation |
+| Supabase free tier limits | Low | 500 MB storage, 2 GB transfer — plenty for personal use |
+| PDF parse quality | Medium | Log failed PDFs; flag scanned-only PDFs early |

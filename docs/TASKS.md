@@ -1,158 +1,191 @@
-# TASKS.md — Görev Listesi
+# TASKS.md — Task List
 
-> Claude: Her görevi tamamladığında [x] yap ve git commit at. Sırayı değiştirme.
-
----
-
-## Faz 0 — Proje kurulumu
-
-- [ ] **T-001** Next.js 14 projesi oluştur (TypeScript, App Router, Tailwind, ESLint)
-- [ ] **T-002** Prisma kur, PostgreSQL bağlantısını ayarla, `.env.example` oluştur
-- [ ] **T-003** pgvector extension'ı ekle: migration dosyasına `CREATE EXTENSION IF NOT EXISTS vector` ekle
-- [ ] **T-004** `Source` ve `Chunk` modellerini ARCHITECTURE.md'deki şemaya göre yaz, migration çalıştır
-- [ ] **T-005** `src/lib/config.ts` yaz — tüm env variable'ları Zod ile parse et ve export et
-- [ ] **T-006** `src/lib/logger.ts` yaz — Winston logger, level env'den gelsin
-- [ ] **T-007** `src/lib/errors.ts` yaz — `IngestionError`, `SearchError`, `EmbeddingError` custom sınıfları
-- [ ] **T-008** Jest kurulumu yap, `tsconfig.json` path alias'larını ayarla (`@/` → `src/`)
-- [ ] **T-009** ESLint + Prettier config yaz, `package.json` script'lerini ekle
+> Claude: mark each task [x] and commit when done. Do not reorder tasks.
 
 ---
 
-## Faz 1 — Embedding altyapısı
+## Phase 0 — Project setup
 
-- [ ] **T-010** `src/embedding/chunker.ts` yaz
-  - Metin alır, ARCHITECTURE.md'deki chunk boyutu ve overlap'e göre array döner
-  - Her chunk için `{ content, chunkIndex, tokenEstimate }` objesi
-  - Unit test yaz: kısa metin, uzun metin, boş metin edge case'leri
-
-- [ ] **T-011** `src/embedding/openai.ts` yaz
-  - `text-embedding-3-small` modeli kullan
-  - Batch embedding destekle (tek seferde max 100 chunk)
-  - Rate limit için exponential backoff ekle
-  - Unit test yaz (OpenAI client mock'la)
-
-- [ ] **T-012** `src/embedding/local.ts` yaz
-  - Ollama `/api/embeddings` endpoint'ini çağır
-  - `nomic-embed-text` modeli default
-  - Unit test yaz (fetch mock'la)
-
-- [ ] **T-013** `src/embedding/index.ts` yaz
-  - `EMBEDDING_PROVIDER` env'e göre openai veya local seç
-  - `embed(texts: string[]): Promise<number[][]>` interface'i export et
+- [ ] **T-001** Scaffold Next.js 14 project (TypeScript, App Router, Tailwind, ESLint)
+- [ ] **T-002** Install and configure Prisma; connect to Supabase via `DATABASE_URL` and `DIRECT_URL`; create `.env.example`
+- [ ] **T-003** Add pgvector migration: create a Prisma migration file that runs `CREATE EXTENSION IF NOT EXISTS vector` and the IVFFLAT index
+- [ ] **T-004** Write `Source` and `Chunk` models in `prisma/schema.prisma` exactly as defined in ARCHITECTURE.md; run `npm run db:migrate`
+- [ ] **T-005** Write `src/lib/config.ts` — parse all env variables with Zod, export typed config object; throw on missing required variables at startup
+- [ ] **T-006** Write `src/lib/logger.ts` — Winston logger; log level from `config.LOG_LEVEL`; JSON format in production, pretty in development
+- [ ] **T-007** Write `src/lib/errors.ts` — `IngestionError`, `SearchError`, `EmbeddingError` custom classes extending `Error` with a `code` field
+- [ ] **T-008** Configure Jest with `ts-jest`; set up `@/` path alias in both `tsconfig.json` and `jest.config.ts`
+- [ ] **T-009** Write `.gitignore` (node_modules, .env, uploads/, .next/); configure ESLint and Prettier; add all scripts to `package.json`
 
 ---
 
-## Faz 2 — Storage katmanı
+## Phase 1 — Embedding infrastructure
 
-- [ ] **T-014** `src/storage/metadata.ts` yaz
-  - `createSource(data)` — Source kaydı oluştur
-  - `getSource(id)` — ID ile getir
-  - `listSources(filter?)` — tip ve tarih filtresiyle listele
-  - `deleteSource(id)` — Source + bağlı Chunk'ları sil
-  - Unit test yaz (Prisma mock'la)
+- [ ] **T-010** Write `src/embedding/chunker.ts`
+  - Accepts a string, returns `Array<{ content: string; chunkIndex: number; tokenEstimate: number }>`
+  - Uses `MAX_CHUNK_SIZE` and `CHUNK_OVERLAP` from config
+  - Write unit tests: short text, long text, empty string, single-word input
 
-- [ ] **T-015** `src/storage/vector.ts` yaz
-  - `insertChunks(chunks)` — embedding array'iyle birlikte toplu insert
-  - `similaritySearch(embedding, topK, filter?)` — cosine similarity ile arama
+- [ ] **T-011** Write `src/embedding/openai.ts`
+  - Uses `text-embedding-3-small`
+  - Accepts `string[]`, returns `number[][]`
+  - Batches in groups of 100 to stay within API limits
+  - Exponential backoff on rate limit errors (429)
+  - Unit tests with mocked OpenAI client
+
+- [ ] **T-012** Write `src/embedding/local.ts`
+  - Calls Ollama `/api/embeddings` with `OLLAMA_EMBEDDING_MODEL` from config
+  - Same interface as openai.ts
+  - Unit tests with mocked `fetch`
+
+- [ ] **T-013** Write `src/embedding/index.ts`
+  - Reads `EMBEDDING_PROVIDER` from config
+  - Exports `embed(texts: string[]): Promise<number[][]>`
+
+---
+
+## Phase 2 — Storage layer
+
+- [ ] **T-014** Write `src/storage/metadata.ts`
+  - `createSource(data: CreateSourceInput): Promise<Source>`
+  - `getSource(id: string): Promise<Source | null>`
+  - `listSources(filter?: SourceFilter): Promise<Source[]>`
+  - `deleteSource(id: string): Promise<void>` — cascades to chunks via Prisma relation
+  - Unit tests with mocked Prisma client
+
+- [ ] **T-015** Write `src/storage/vector.ts`
+  - `insertChunks(chunks: ChunkWithEmbedding[]): Promise<void>` — uses Prisma `$executeRaw` for the vector column
+  - `similaritySearch(embedding: number[], topK: number, filter?: VectorFilter): Promise<ScoredChunk[]>`
     ```sql
-    SELECT *, 1 - (embedding <=> $1) as score
-    FROM "Chunk"
-    ORDER BY embedding <=> $1
+    SELECT c.*, 1 - (c.embedding <=> $1::vector) AS score
+    FROM "Chunk" c
+    JOIN "Source" s ON c."sourceId" = s.id
+    ORDER BY c.embedding <=> $1::vector
     LIMIT $2
     ```
-  - Unit test yaz (Prisma $queryRaw mock'la)
+  - Unit tests with mocked `$queryRaw`
 
-- [ ] **T-016** `src/storage/index.ts` yaz — metadata ve vector işlemlerini birleştiren `saveDocument(source, chunks, embeddings)` fonksiyonu
-
----
-
-## Faz 3 — Ingestion pipeline'ları
-
-- [ ] **T-017** `src/ingestion/text.ts` yaz
-  - Düz metin veya Markdown alır
-  - Metin temizleme (fazla whitespace, kontrol karakterleri)
-  - `{ title, content, type: 'TEXT' }` döner
-  - Unit test yaz
-
-- [ ] **T-018** `src/ingestion/pdf.ts` yaz
-  - `pdf-parse` ile PDF buffer'ından metin çıkar
-  - Sayfa numaralarını chunk metadata'sına ekle
-  - Çıkarılamayan PDF'leri logla, hata fırlat
-  - Unit test yaz (sample PDF dosyasıyla)
-
-- [ ] **T-019** `src/ingestion/url.ts` yaz
-  - Playwright ile sayfayı aç (headless)
-  - `@mozilla/readability` ile makale içeriğini çıkar
-  - Başlık, yazar, tarih metadata'sını al
-  - Timeout: 15 saniye, hata durumunda `IngestionError` fırlat
-  - Integration test yaz (example.com gibi basit bir URL ile)
-
-- [ ] **T-020** `src/ingestion/index.ts` yaz — `ingest(input)` factory fonksiyonu, tipe göre doğru parser'ı çağırır
+- [ ] **T-016** Write `src/storage/index.ts`
+  - `saveDocument(source: CreateSourceInput, chunks: Chunk[], embeddings: number[][]): Promise<string>` — returns sourceId
+  - Wraps metadata + vector inserts in a logical transaction (delete source on failure)
 
 ---
 
-## Faz 4 — Search katmanı
+## Phase 3 — Ingestion pipelines
 
-- [ ] **T-021** `src/search/semantic.ts` yaz
-  - Sorguyu embed et
-  - Vector search yap (top-k)
-  - Source bilgisini join et
-  - `SearchResult[]` döner
-  - Unit test yaz
+- [ ] **T-017** Write `src/ingestion/text.ts`
+  - Accepts plain text or Markdown string
+  - Cleans whitespace and control characters
+  - Returns `{ title: string; content: string; type: 'TEXT' }`
+  - Unit tests
 
-- [ ] **T-022** `src/search/rerank.ts` yaz
-  - Score threshold uygula (< 0.5 cosine similarity'yi çıkar)
-  - Aynı source'dan gelen chunk'ları birleştir (max 2 chunk/source)
-  - Sonuçları score'a göre sırala
+- [ ] **T-018** Write `src/ingestion/pdf.ts`
+  - Accepts a `Buffer` (file upload)
+  - Uses `pdf-parse` to extract text
+  - Preserves page number per chunk (split by page break, then chunk within page)
+  - Logs and throws `IngestionError` for scanned-only or corrupt PDFs
+  - Unit tests with a real small PDF fixture
 
-- [ ] **T-023** `src/search/index.ts` yaz — `search(query, options?)` export et
+- [ ] **T-019** Write `src/ingestion/url.ts`
+  - Launches Playwright in headless mode
+  - Navigates to URL; timeout: 15 seconds
+  - Runs `@mozilla/readability` on the DOM to extract article content
+  - Extracts title, author, publish date from metadata
+  - Closes browser; throws `IngestionError` with reason on failure
+  - Integration test against `https://example.com`
 
----
-
-## Faz 5 — API endpoint'leri
-
-- [ ] **T-024** `src/app/api/ingest/route.ts` yaz
-  - POST endpoint
-  - Zod ile request validation
-  - `ingestion/index.ts` → `embedding/index.ts` → `storage/index.ts` pipeline'ını çağır
-  - Hata durumunda anlamlı HTTP status kodu döndür (400, 422, 500)
-  - Integration test yaz
-
-- [ ] **T-025** `src/app/api/search/route.ts` yaz
-  - POST endpoint
-  - Sorguyu al, search yap, LLM'e chunk'ları ver, cevap üret
-  - LLM prompt'u ARCHITECTURE.md'deki response formatına uygun olsun
-  - Kaynak referanslarını cevaba ekle
-  - Integration test yaz
+- [ ] **T-020** Write `src/ingestion/index.ts`
+  - `ingest(input: IngestionInput): Promise<IngestionResult>` factory
+  - Routes to correct parser based on `input.type`
+  - Calls `chunker` → `embed` → `saveDocument` pipeline
 
 ---
 
-## Faz 6 — UI
+## Phase 4 — LLM layer
 
-- [ ] **T-026** Ana layout yaz (`src/app/layout.tsx`) — Tailwind, font, metadata
-- [ ] **T-027** `SearchBar.tsx` component'i yaz — input, loading state, submit
-- [ ] **T-028** `SearchResults.tsx` component'i yaz — cevap metni + kaynak kartları
-- [ ] **T-029** `SourceBadge.tsx` component'i yaz — type icon, domain, tarih
-- [ ] **T-030** `AddContentForm.tsx` component'i yaz — URL/text/PDF tab'lı form, progress göstergesi
-- [ ] **T-031** Ana sayfa (`src/app/page.tsx`) yaz — search bar + results birleştir
-- [ ] **T-032** Ekleme sayfası (`src/app/add/page.tsx`) yaz — AddContentForm entegre et
+- [ ] **T-021** Write `src/llm/anthropic.ts`
+  - Uses `@anthropic-ai/sdk`
+  - `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
+  - Uses prompt template from ARCHITECTURE.md
+  - Model: `claude-haiku-4-5-20251001` (from config)
+  - Unit tests with mocked Anthropic client
+
+- [ ] **T-022** Write `src/llm/local.ts`
+  - Calls Ollama `/api/chat` with `OLLAMA_LLM_MODEL` from config
+  - Same interface as anthropic.ts
+  - Unit tests with mocked `fetch`
+
+- [ ] **T-023** Write `src/llm/index.ts`
+  - Reads `LLM_PROVIDER` from config
+  - Exports `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
 
 ---
 
-## Faz 7 — Polish ve test
+## Phase 5 — Search layer
 
-- [ ] **T-033** End-to-end test: URL ekle → ara → sonuç bul
-- [ ] **T-034** End-to-end test: PDF ekle → içerikten soru sor → doğru bölümü bul
-- [ ] **T-035** Performance test: 100 belge ekle, arama süresini ölç, hedefe (< 500ms) ulaş
-- [ ] **T-036** README.md yaz — kurulum adımları, ilk çalıştırma, screenshot
+- [ ] **T-024** Write `src/search/semantic.ts`
+  - Embeds the query string
+  - Calls `similaritySearch` with topK from config
+  - Joins source metadata onto results
+  - Returns `SearchResult[]`
+  - Unit tests
+
+- [ ] **T-025** Write `src/search/rerank.ts`
+  - Drops results below `SIMILARITY_THRESHOLD` (from config)
+  - Keeps max 2 chunks per source (pick highest-scoring ones)
+  - Sorts by score descending
+
+- [ ] **T-026** Write `src/search/index.ts`
+  - `search(query: string, options?: SearchOptions): Promise<SearchResponse>`
+  - Calls semantic → rerank → generateAnswer
+  - Returns `{ answer, sources }`
 
 ---
 
-## Backlog (MVP sonrası)
+## Phase 6 — API routes
 
-- [ ] **B-001** Twitter/X thread ingestion
-- [ ] **B-002** Browser extension (Chrome)
-- [ ] **B-003** Otomatik ilişki keşfi (yeni belge eklenince eski belgelerle bağlantı kur)
-- [ ] **B-004** Konu bazlı özet görünümü
-- [ ] **B-005** NextAuth.js ile authentication
-- [ ] **B-006** Bulk import (OPML, Pocket export, Instapaper export)
+- [ ] **T-027** Write `src/app/api/ingest/route.ts`
+  - `POST /api/ingest`
+  - Validate request with Zod (matches schema in ARCHITECTURE.md)
+  - Call `ingest()` from ingestion index
+  - Return `{ sourceId, chunksCreated, title, processingTimeMs }`
+  - Return correct HTTP status on each error type (400, 422, 500)
+  - Integration tests
+
+- [ ] **T-028** Write `src/app/api/search/route.ts`
+  - `POST /api/search`
+  - Validate request with Zod
+  - Call `search()` from search index
+  - Return `{ answer, sources }`
+  - Integration tests
+
+---
+
+## Phase 7 — UI
+
+- [ ] **T-029** Write `src/app/layout.tsx` — Tailwind base layout, metadata, font setup
+- [ ] **T-030** Write `SearchBar.tsx` — controlled input, loading spinner, keyboard submit (Enter)
+- [ ] **T-031** Write `SearchResults.tsx` — answer text block + source cards below
+- [ ] **T-032** Write `SourceBadge.tsx` — type icon, domain name, formatted date, similarity score
+- [ ] **T-033** Write `AddContentForm.tsx` — tabbed form (URL / Text / PDF), progress indicator, success/error toast
+- [ ] **T-034** Write `src/app/page.tsx` — compose SearchBar + SearchResults; fetch from `/api/search`
+- [ ] **T-035** Write `src/app/add/page.tsx` — compose AddContentForm; POST to `/api/ingest`
+
+---
+
+## Phase 8 — QA and documentation
+
+- [ ] **T-036** End-to-end test: add a URL → search for content from that URL → verify source appears in top 3
+- [ ] **T-037** End-to-end test: upload a PDF → ask a question about its content → verify correct page number in result
+- [ ] **T-038** Performance test: index 100 documents → measure search latency → must be under 500 ms
+- [ ] **T-039** Write `README.md`: prerequisites, setup steps (Supabase project, env vars, `npm run db:migrate`), first run, usage examples with screenshots
+
+---
+
+## Backlog (post-MVP)
+
+- [ ] **B-001** Twitter/X thread ingestion via URL
+- [ ] **B-002** Chrome browser extension (one-click save current tab)
+- [ ] **B-003** Automatic connection discovery (when a new item is added, find related existing items)
+- [ ] **B-004** Topic-based summary view ("summarize everything I've saved about RAG")
+- [ ] **B-005** Authentication with NextAuth.js (Google OAuth)
+- [ ] **B-006** Bulk import: Pocket export, Instapaper export, OPML feeds

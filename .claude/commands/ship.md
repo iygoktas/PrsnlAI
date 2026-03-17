@@ -1,17 +1,17 @@
-# /ship komutu
-# Kullanım: /ship
-# TASKS.md'deki sıradaki görevi otomatik implement eder
+# /ship command
+# Usage: /ship
+# Picks the next unchecked task from TASKS.md and implements it autonomously.
 
-TASKS.md dosyasını oku.
-İlk tamamlanmamış [ ] görevi bul.
+Read docs/TASKS.md.
+Find the first unchecked [ ] task.
 
-Şu adımları sırayla yap:
-1. Görevle ilgili dosyaları oku (ARCHITECTURE.md + etkilenecek src dosyaları)
-2. Implementation planını PLANS.md'e yaz (3-5 madde, hangi dosyalara dokunacaksın)
-3. Kodu yaz
-4. Test yaz ve `npm test -- --testPathPattern=<ilgili test dosyası>` çalıştır
-5. Testler geçiyorsa: `git add -A && git commit -m "<type>(scope): <açıklama>"`
-6. TASKS.md'de görevi `[x]` yap
-7. Tamamlandığını ve bir sonraki görevin ne olduğunu bildir
+Execute the following steps in order:
+1. Read relevant files (ARCHITECTURE.md + any src files the task touches)
+2. Write a 3–5 step implementation plan into docs/PLANS.md under a heading for this task
+3. Write the code
+4. Write tests and run: `npm test -- --testPathPattern=<relevant test file>`
+5. If tests pass: `git add -A && git commit -m "<type>(scope): <description>"`
+6. Mark the task `[x]` in TASKS.md
+7. Report what was completed and what the next task is
 
-Hata alırsan 2 kez kendi çöz, 3. denemede dur ve ne denediğini açıkla.
+On error: fix it yourself twice. On the third failed attempt, stop and explain what you tried and where it's failing.

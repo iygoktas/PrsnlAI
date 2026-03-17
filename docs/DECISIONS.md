@@ -1,113 +1,135 @@
-# DECISIONS.md — Mimari Karar Kaydı (ADR)
+# DECISIONS.md — Architecture Decision Records (ADR)
 
-> Her yeni paket eklendiğinde veya büyük bir teknik karar alındığında buraya yaz.
-> Format: ## ADR-XXX — Başlık | Tarih | Durum
-
----
-
-## ADR-001 — pgvector vs. Pinecone/Weaviate
-
-**Tarih:** Proje başlangıcı
-**Durum:** Kabul edildi
-
-**Bağlam:** Vector storage için seçenek gerekiyordu.
-
-**Karar:** pgvector (PostgreSQL extension) kullan.
-
-**Gerekçe:**
-- Local geliştirmede sıfır maliyet
-- Ayrı servis yok, tek DB
-- Prisma ile entegrasyon kolay
-- Export/backup standart SQL
-- 10.000 belgeye kadar performans yeterli (IVFFLAT index)
-
-**Trade-off:** 1M+ belge için Pinecone/Weaviate daha iyi scale eder. Bu proje için erken optimizasyon.
+> Log every significant technical decision here, especially new packages.
+> Format: ## ADR-XXX — Title | Date | Status
 
 ---
 
-## ADR-002 — pdf-parse vs. PyMuPDF
+## ADR-001 — Supabase over local PostgreSQL
 
-**Tarih:** Proje başlangıcı
-**Durum:** Kabul edildi
+**Date:** Project start
+**Status:** Accepted
 
-**Bağlam:** PDF text extraction için Node.js veya Python seçimi.
+**Context:** Needed a PostgreSQL instance with pgvector support for the vector store.
 
-**Karar:** `pdf-parse` (Node.js) kullan.
+**Decision:** Use Supabase (hosted PostgreSQL).
 
-**Gerekçe:**
-- Stack tamamen TypeScript, Python servisi eklemek karmaşıklık yaratır
-- pdf-parse büyük çoğunluk PDF için yeterli
-- PyMuPDF daha güçlü ama ayrı Python process gerektirir
+**Rationale:**
+- pgvector comes pre-installed — no manual extension setup
+- Free tier is sufficient for personal use (500 MB storage, 2 GB transfer/month)
+- Zero local setup: no Docker, no Postgres service to manage
+- Supabase dashboard makes it easy to inspect data and run one-off queries
+- Standard PostgreSQL under the hood — migration to self-hosted is trivial if needed
+- `DIRECT_URL` + `DATABASE_URL` pattern works cleanly with Prisma
 
-**Trade-off:** Taranmış PDF (image-only) desteklenmez. OCR gerekirse Tesseract.js eklenebilir (ayrı ADR).
-
----
-
-## ADR-003 — Playwright vs. Puppeteer
-
-**Tarih:** Proje başlangıcı
-**Durum:** Kabul edildi
-
-**Bağlam:** Web scraping için browser automation kütüphanesi.
-
-**Karar:** Playwright kullan.
-
-**Gerekçe:**
-- Chromium, Firefox, WebKit desteği
-- Auto-wait mekanizması daha kararlı
-- Puppeteer'dan daha aktif geliştirme
-- Network interception daha güçlü
+**Trade-off:** Adds an external dependency. If Supabase is unreachable, the app is down. Acceptable for a personal tool.
 
 ---
 
-## ADR-004 — text-embedding-3-small vs. ada-002
+## ADR-002 — pgvector over Pinecone / Weaviate
 
-**Tarih:** Proje başlangıcı
-**Durum:** Kabul edildi
+**Date:** Project start
+**Status:** Accepted
 
-**Bağlam:** OpenAI embedding modeli seçimi.
+**Context:** Needed a vector store for semantic search.
 
-**Karar:** `text-embedding-3-small` kullan.
+**Decision:** Use pgvector (as a Supabase extension) instead of a dedicated vector database.
 
-**Gerekçe:**
-- ada-002'den %5 daha iyi benchmark skoru (MTEB)
-- ada-002'den 5x daha ucuz ($0.02 vs $0.10 per 1M token)
-- 1536 boyut, pgvector ile uyumlu
+**Rationale:**
+- No separate service to manage or pay for
+- All data in one place (metadata + vectors in the same DB, joinable with SQL)
+- Standard SQL backups and exports
+- IVFFLAT index handles up to ~100k documents comfortably
+- Cosine similarity query is one SQL expression
 
----
-
-## ADR-005 — claude-3-5-haiku vs. claude-3-5-sonnet (RAG için)
-
-**Tarih:** Proje başlangıcı
-**Durum:** Kabul edildi
-
-**Bağlam:** RAG pipeline'ında kullanılacak LLM seçimi.
-
-**Karar:** `claude-3-5-haiku` default, config ile değiştirilebilir.
-
-**Gerekçe:**
-- RAG'da LLM görevi basit: chunk'ları okuyup özetle
-- Haiku bu iş için yeterince iyi
-- Sonnet'e kıyasla 10x daha ucuz
-- Latency daha düşük (< 1 saniye hedefi için önemli)
-
-**Trade-off:** Karmaşık çıkarım gerektiren sorgularda Sonnet daha iyi. `LLM_MODEL` env eklenebilir.
+**Trade-off:** Not the fastest option at very large scale. Switch to HNSW index (also in pgvector) at 100k+ documents, or migrate to Weaviate/Qdrant at 1M+. Neither applies to a personal knowledge base.
 
 ---
 
-## Şablon (yeni karar için kopyala)
+## ADR-003 — Anthropic API (claude-haiku) for answer generation
+
+**Date:** Project start
+**Status:** Accepted
+
+**Context:** Needed an LLM to generate answers from retrieved chunks (RAG).
+
+**Decision:** Use `@anthropic-ai/sdk` with `claude-haiku-4-5-20251001` as the default model.
+
+**Rationale:**
+- RAG answer generation is a simple task: read chunks, summarize, cite sources. Haiku handles it well.
+- Haiku is ~10x cheaper than Sonnet and faster (important for <2s latency target)
+- Anthropic API gives full control over the prompt — no wrapper abstractions
+- Model is swappable via `LLM_MODEL` env variable without code changes
+
+**Trade-off:** Haiku may struggle with complex multi-hop reasoning queries. For those cases, set `LLM_MODEL=claude-sonnet-4-6` in `.env`.
+
+---
+
+## ADR-004 — OpenAI text-embedding-3-small over ada-002
+
+**Date:** Project start
+**Status:** Accepted
+
+**Context:** Needed an embedding model for vectorizing chunks and queries.
+
+**Decision:** Use `text-embedding-3-small`.
+
+**Rationale:**
+- ~5% better on MTEB benchmark than ada-002
+- 5x cheaper ($0.02 vs $0.10 per 1M tokens)
+- Same 1536-dimension output — drop-in replacement for ada-002
+- Supports dimension reduction (can go down to 256 if storage becomes a concern)
+
+---
+
+## ADR-005 — pdf-parse over PyMuPDF
+
+**Date:** Project start
+**Status:** Accepted
+
+**Context:** Needed a PDF text extraction library.
+
+**Decision:** Use `pdf-parse` (Node.js).
+
+**Rationale:**
+- Entire stack is TypeScript — adding a Python service introduces operational complexity
+- `pdf-parse` handles the majority of text-based PDFs correctly
+- No separate process, no IPC overhead
+
+**Trade-off:** Scanned PDFs (image-only) are not supported. If OCR becomes necessary, `tesseract.js` can be added as a post-processing step (separate ADR).
+
+---
+
+## ADR-006 — Playwright over Puppeteer
+
+**Date:** Project start
+**Status:** Accepted
+
+**Context:** Needed a browser automation library for URL ingestion.
+
+**Decision:** Use Playwright.
+
+**Rationale:**
+- More stable auto-wait mechanism — fewer flaky scrapes
+- Multi-browser support (Chromium, Firefox, WebKit) if needed
+- More active development and maintenance than Puppeteer
+- Better network interception API
+
+---
+
+## Template (copy for new decisions)
 
 ```
-## ADR-00X — Başlık
+## ADR-00X — Title
 
-**Tarih:** GG.AA.YYYY
-**Durum:** Kabul edildi | Reddedildi | Değiştirildi (ADR-00Y ile)
+**Date:** YYYY-MM-DD
+**Status:** Accepted | Rejected | Superseded by ADR-00Y
 
-**Bağlam:** Neden bu karar alınması gerekti?
+**Context:** Why did this decision need to be made?
 
-**Karar:** Ne yapıldı?
+**Decision:** What was decided?
 
-**Gerekçe:** Neden bu seçenek?
+**Rationale:** Why this option over the alternatives?
 
-**Trade-off:** Ne kaybedildi veya ne riske atıldı?
+**Trade-off:** What was given up or accepted as a risk?
 ```

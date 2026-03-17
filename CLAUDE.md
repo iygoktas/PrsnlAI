@@ -1,114 +1,111 @@
 # CLAUDE.md — Personal AI Knowledge Base
 
-## Projeyi anlamak için sırayla oku
-1. Bu dosya (CLAUDE.md) — kurallar ve otonomluk sınırları
-2. docs/PRD.md — ne yapıyoruz ve neden
-3. docs/ARCHITECTURE.md — teknik kararlar ve stack
-4. docs/TASKS.md — sıradaki görev ne
+## Read these files in order before doing anything
+1. This file (CLAUDE.md) — rules and autonomy boundaries
+2. docs/PRD.md — what we're building and why
+3. docs/ARCHITECTURE.md — technical decisions and stack
+4. docs/TASKS.md — what to work on next
 
 ---
 
-## Otonomluk kuralları
+## Autonomy rules
 
-### Onay ALMADAN yap
-- Her türlü dosya oluşturma, düzenleme, silme
-- `npm install`, `pip install` ve benzeri paket kurulumları
+### Do WITHOUT asking for approval
+- Create, edit, or delete any file
+- `npm install`, `pip install`, or any package installation
 - `git add`, `git commit`, `git push`
-- Yeni klasör ve modül oluşturma
-- Test yazma ve çalıştırma
-- Refactor ve kod temizleme
-- `.env.example` güncelleme (gerçek secret'ları asla koyma)
+- Create new folders and modules
+- Write and run tests
+- Refactor and clean up code
+- Update `.env.example` (never put real secrets in it)
 
-### Dur ve açıkla
-- Production veritabanına write işlemi (seed/migration dışında)
-- Ücretli external API çağrısı (OpenAI, Pinecone vb. ilk kurulumda bir kez sor)
-- Mevcut bir migration dosyasını değiştirme
+### STOP and explain before doing
+- Write to production database (outside of seeds/migrations)
+- Make a paid external API call (ask once during initial setup for OpenAI/Anthropic)
+- Modify an existing migration file
 - `git push --force`
-- Bir dosyayı kalıcı silme (önce git commit al)
+- Permanently delete a file (always commit first)
 
 ---
 
-## Çalışma döngüsü
+## Work loop
 
-Her görev için şu sırayı takip et:
+Follow this sequence for every task:
 
 ```
-1. TASKS.md'den ilk [ ] görevi seç
-2. İlgili dosyaları oku (ARCHITECTURE.md + etkilenen src dosyaları)
-3. Implementation planını 3-5 maddeyle PLANS.md'e yaz
-4. Kodu yaz
-5. Test yaz ve çalıştır (`npm test` veya `pytest`)
-6. Testler geçiyorsa: git add -A && git commit -m "<type>: <açıklama>"
-7. TASKS.md'de görevi [x] yap
-8. Bir sonraki göreve geç
+1. Pick the first unchecked [ ] task from docs/TASKS.md
+2. Read relevant files (ARCHITECTURE.md + affected src files)
+3. Write a 3–5 step implementation plan in docs/PLANS.md
+4. Write the code
+5. Write tests and run them (`npm test` or `pytest`)
+6. If tests pass: git add -A && git commit -m "<type>: <description>"
+7. Mark the task [x] in TASKS.md
+8. Move on to the next task
 ```
 
-Hata alırsan: 2 kez kendi çöz. 3. denemede dur, hatayı ve denediklerini açıkla.
+On error: try to fix it yourself twice. On the third failed attempt, stop and explain what you tried.
 
 ---
 
-## Git commit formatı (Conventional Commits)
+## Git commit format (Conventional Commits)
 
 ```
-feat: yeni özellik
-fix: hata düzeltme
-refactor: davranış değişmeden kod değişikliği
-test: test ekleme/düzenleme
-docs: döküman değişikliği
-chore: build, config, paket güncelleme
+feat: add new feature
+fix: correct a bug
+refactor: change code without changing behavior
+test: add or update tests
+docs: documentation changes
+chore: build, config, dependency updates
 ```
 
-Her commit atomik olsun — tek bir mantıksal değişiklik.
+Keep each commit atomic — one logical change per commit.
 
 ---
 
-## Kod standartları
+## Code standards
 
-### Genel
-- TypeScript strict mode açık, `any` kullanma
-- Her public fonksiyonun üstüne JSDoc yorum
-- Türkçe yorum satırı yazma (kod İngilizce)
-- `console.log` bırakma, `logger` kullan
-- Magic number kullanma, sabit tanımla
+### General
+- TypeScript strict mode on — never use `any`
+- JSDoc comment above every public function
+- All code and comments in English
+- No `console.log` — use the `logger` utility
+- No magic numbers — define named constants
 
-### Dosya yapısı
+### Folder layout
 ```
 src/
-├── ingestion/       ← Veri alma pipeline'ları (PDF, URL, text, image)
-├── embedding/       ← Embedding oluşturma ve yönetimi
-├── storage/         ← Vector DB ve metadata DB işlemleri
-├── search/          ← Semantic search ve retrieval
-├── api/             ← REST API endpoint'leri
-├── ui/              ← Frontend (Next.js pages/components)
-├── lib/             ← Paylaşılan utility'ler
-└── types/           ← Global TypeScript tipleri
+├── ingestion/       ← Data intake pipelines (PDF, URL, text, image)
+├── embedding/       ← Embedding generation and management
+├── storage/         ← Vector DB and metadata DB operations
+├── search/          ← Semantic search and retrieval
+├── api/             ← REST API route handlers
+├── ui/              ← Frontend (Next.js pages and components)
+├── lib/             ← Shared utilities
+└── types/           ← Global TypeScript types
 ```
 
-### Test
-- Her yeni fonksiyon için en az 1 unit test
-- API endpoint'leri için integration test
-- Test dosyaları `__tests__` klasöründe, aynı modül adıyla
+### Testing
+- At least one unit test per new function
+- Integration tests for every API endpoint
+- Test files live in `__tests__/` mirroring the module name
 
 ---
 
-## Environment
+## Dev commands
 
 ```bash
-# Geliştirme
 npm run dev          # Next.js dev server
-npm test             # Jest testleri
-npm run db:migrate   # Prisma migration
-npm run db:seed      # Test verisi
-
-# Kontrol komutları
-npm run lint         # ESLint
-npm run typecheck    # TypeScript kontrol
+npm test             # Jest test suite
+npm run db:migrate   # Push Prisma schema to Supabase
+npm run db:seed      # Insert seed data
+npm run lint         # ESLint check
+npm run typecheck    # TypeScript check
 ```
 
-`.env` dosyası yoksa `.env.example`'ı kopyala ve değerleri doldur.
+If `.env` doesn't exist, copy `.env.example` and fill in the values.
 
 ---
 
-## Kritik bağımlılıklar ve versiyonlar
+## Critical dependencies
 
-Yeni paket eklemeden önce ARCHITECTURE.md'deki "Kabul edilen paketler" listesine bak. Listede yoksa eklemeden önce DECISIONS.md'e neden seçtiğini yaz.
+Before adding any package not listed in ARCHITECTURE.md, write a short ADR in docs/DECISIONS.md explaining why you chose it.

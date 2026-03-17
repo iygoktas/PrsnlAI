@@ -1,70 +1,84 @@
-# ARCHITECTURE.md — Teknik Mimari
+# ARCHITECTURE.md — Technical Architecture
 
-## Stack kararları
+## Stack decisions
 
 ### Frontend
-- **Next.js 14** (App Router) — SSR, API routes hepsi tek projede
-- **TypeScript strict** — runtime hatalarını azalt
-- **Tailwind CSS** — hızlı UI, custom component gerekmez
-- **shadcn/ui** — temel component'ler (Button, Input, Card)
+- **Next.js 14** (App Router) — SSR, API routes, and UI all in one project
+- **TypeScript strict** — catch errors at compile time, not runtime
+- **Tailwind CSS** — fast styling, no component library overhead
+- **shadcn/ui** — base components (Button, Input, Card, Tabs)
 
-### Backend (Next.js API Routes içinde)
-- **Node.js** — TypeScript ile tutarlılık
-- **Prisma** — ORM, migration yönetimi, type-safe DB erişimi
+### Backend (Next.js API Routes)
+- **Node.js** — consistent with TypeScript frontend
+- **Prisma** — ORM, migration management, type-safe DB access
 
-### Veritabanı
-- **PostgreSQL + pgvector extension** — hem metadata hem vector aynı DB'de
-  - Neden: Pinecone/Weaviate yerine local başla, maliyet sıfır, export kolay
-  - pgvector 1536 boyut (OpenAI ada-002) veya 768 boyut (local model) destekler
-- **Prisma** migration ile yönetilir
+### Database
+- **Supabase (PostgreSQL + pgvector)** — hosted Postgres with vector extension built in
+  - Why Supabase over local Postgres: zero local setup, free tier is enough for personal use (500 MB), pgvector pre-installed, easy to inspect data via Supabase dashboard
+  - Why pgvector over Pinecone/Weaviate: no separate service, standard SQL backups, good enough for up to ~100k documents
+  - Connection: via `DATABASE_URL` (Supabase connection string with `?pgbouncer=true` for serverless)
 
 ### Embedding
-- **Birincil**: `text-embedding-3-small` (OpenAI) — 1536 boyut, ucuz ($0.02/1M token)
-- **Alternatif**: `nomic-embed-text` via Ollama — tamamen local, ücretsiz
-- **Seçim**: `.env`'de `EMBEDDING_PROVIDER=openai|local` ile değiştirilebilir
+- **Primary**: `text-embedding-3-small` (OpenAI) — 1536 dimensions, cheap ($0.02/1M tokens)
+- **Fallback**: `nomic-embed-text` via Ollama — fully local, free
+- **Switching**: controlled by `EMBEDDING_PROVIDER` env variable (`openai` | `local`)
 
-### LLM (soru-cevap için)
-- **Birincil**: `claude-3-5-haiku` — hızlı, ucuz, RAG için yeterli
-- **Alternatif**: `llama3.2` via Ollama
-- Seçim: `.env`'de `LLM_PROVIDER=anthropic|local`
+### LLM (for answer generation)
+- **Primary**: Anthropic API — `claude-haiku-4-5-20251001`
+  - Why Haiku: RAG answer generation is a simple task (summarize + cite), Haiku handles it well at 10x lower cost than Sonnet
+  - Why Anthropic API directly: full control over prompt, streaming support, no wrapper overhead
+- **Fallback**: `llama3.2` via Ollama
+- **Switching**: controlled by `LLM_PROVIDER` env variable (`anthropic` | `local`)
 
 ### Ingestion
-- **Web scraping**: Playwright (Puppeteer yerine — daha kararlı)
-- **PDF**: `pdf-parse` (Node.js) — PyMuPDF kadar kapasiteli, aynı dilde
-- **HTML temizleme**: `@mozilla/readability` — makale içeriğini boilerplate'den ayırır
+- **Web scraping**: Playwright — more stable than Puppeteer, better auto-wait
+- **PDF parsing**: `pdf-parse` (Node.js) — good enough for text-based PDFs, same language as the rest of the stack
+- **HTML cleaning**: `@mozilla/readability` — strips nav, ads, footers; extracts article body
 
-### Chunking stratejisi
+### Chunking strategy
 ```
-Chunk boyutu: 512 token
-Overlap: 64 token
-Metadata her chunk'ta: source_id, chunk_index, page_number (PDF için)
+Chunk size:  512 tokens
+Overlap:      64 tokens
+Metadata per chunk: source_id, chunk_index, page_number (PDFs only)
 ```
 
 ---
 
-## Veritabanı şeması
+## Database schema
 
 ```prisma
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")   // required by Supabase for migrations
+}
+
 model Source {
-  id          String   @id @default(cuid())
-  type        SourceType  // URL | PDF | TEXT | TWEET
-  title       String
-  url         String?
-  filePath    String?
-  content     String   // ham metin (arama için)
-  createdAt   DateTime @default(now())
-  chunks      Chunk[]
+  id        String     @id @default(cuid())
+  type      SourceType
+  title     String
+  url       String?
+  filePath  String?
+  content   String     // raw text for full-text fallback
+  createdAt DateTime   @default(now())
+  chunks    Chunk[]
 }
 
 model Chunk {
-  id          String   @id @default(cuid())
+  id          String                      @id @default(cuid())
   sourceId    String
-  source      Source   @relation(fields: [sourceId], references: [id])
+  source      Source                      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   content     String
   chunkIndex  Int
   pageNumber  Int?
   embedding   Unsupported("vector(1536)")?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime                    @default(now())
 }
 
 enum SourceType {
@@ -75,7 +89,7 @@ enum SourceType {
 }
 ```
 
-pgvector için ek migration:
+Supabase migration for pgvector (run once via Supabase SQL editor or migration file):
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE INDEX ON "Chunk" USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
@@ -83,7 +97,7 @@ CREATE INDEX ON "Chunk" USING ivfflat (embedding vector_cosine_ops) WITH (lists 
 
 ---
 
-## Klasör yapısı (tam)
+## Full folder structure
 
 ```
 personal-ai-kb/
@@ -93,52 +107,54 @@ personal-ai-kb/
 │   ├── ARCHITECTURE.md
 │   ├── TASKS.md
 │   ├── DECISIONS.md
-│   └── PLANS.md              ← Claude'un implementation planlarını yazdığı yer
+│   └── PLANS.md              ← Claude writes implementation plans here
 ├── .claude/
 │   └── commands/
-│       ├── ship.md           ← /ship komutu
-│       ├── status.md         ← /status komutu
-│       └── review.md         ← /review komutu
+│       ├── ship.md           ← /ship command
+│       ├── status.md         ← /status command
+│       └── review.md         ← /review command
 ├── src/
 │   ├── ingestion/
-│   │   ├── url.ts            ← Playwright scraper
-│   │   ├── pdf.ts            ← PDF parser
-│   │   ├── text.ts           ← Düz metin/markdown
-│   │   └── index.ts          ← Ingestion factory
+│   │   ├── url.ts            ← Playwright scraper + Readability
+│   │   ├── pdf.ts            ← pdf-parse wrapper
+│   │   ├── text.ts           ← Plain text / Markdown handler
+│   │   └── index.ts          ← Ingestion factory (routes by type)
 │   ├── embedding/
 │   │   ├── openai.ts         ← OpenAI embedding provider
 │   │   ├── local.ts          ← Ollama embedding provider
-│   │   ├── chunker.ts        ← Metin chunking logic
-│   │   └── index.ts          ← Provider seçimi
+│   │   ├── chunker.ts        ← Text chunking logic
+│   │   └── index.ts          ← Provider selector
 │   ├── storage/
-│   │   ├── vector.ts         ← pgvector işlemleri (insert, search)
-│   │   ├── metadata.ts       ← Prisma CRUD
-│   │   └── index.ts
+│   │   ├── vector.ts         ← pgvector operations (insert, similarity search)
+│   │   ├── metadata.ts       ← Prisma CRUD for Source and Chunk
+│   │   └── index.ts          ← saveDocument() — combines both
 │   ├── search/
-│   │   ├── semantic.ts       ← Embedding + vector search
-│   │   ├── rerank.ts         ← Sonuçları skor ile sırala
-│   │   └── index.ts
-│   ├── api/
-│   │   └── (Next.js route handlers)
-│   │       ├── ingest/
-│   │       │   └── route.ts  ← POST /api/ingest
-│   │       └── search/
-│   │           └── route.ts  ← POST /api/search
-│   ├── ui/
-│   │   ├── app/
-│   │   │   ├── page.tsx      ← Ana sayfa (search)
-│   │   │   ├── add/
-│   │   │   │   └── page.tsx  ← İçerik ekleme
-│   │   │   └── layout.tsx
-│   │   └── components/
-│   │       ├── SearchBar.tsx
-│   │       ├── SearchResults.tsx
-│   │       ├── AddContentForm.tsx
-│   │       └── SourceBadge.tsx
+│   │   ├── semantic.ts       ← Embed query → vector search → join metadata
+│   │   ├── rerank.ts         ← Score threshold, deduplicate by source
+│   │   └── index.ts          ← search() public interface
+│   ├── llm/
+│   │   ├── anthropic.ts      ← Anthropic SDK wrapper (generate answer + stream)
+│   │   ├── local.ts          ← Ollama LLM wrapper
+│   │   └── index.ts          ← Provider selector
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── ingest/
+│   │   │   │   └── route.ts  ← POST /api/ingest
+│   │   │   └── search/
+│   │   │       └── route.ts  ← POST /api/search
+│   │   ├── page.tsx          ← Home page (search)
+│   │   ├── add/
+│   │   │   └── page.tsx      ← Add content page
+│   │   └── layout.tsx
+│   ├── components/
+│   │   ├── SearchBar.tsx
+│   │   ├── SearchResults.tsx
+│   │   ├── AddContentForm.tsx
+│   │   └── SourceBadge.tsx
 │   ├── lib/
-│   │   ├── logger.ts         ← Winston logger
-│   │   ├── config.ts         ← Env variables type-safe
-│   │   └── errors.ts         ← Custom error sınıfları
+│   │   ├── logger.ts         ← Winston logger (level from env)
+│   │   ├── config.ts         ← Zod-parsed env variables
+│   │   └── errors.ts         ← IngestionError, SearchError, EmbeddingError
 │   └── types/
 │       ├── ingestion.ts
 │       ├── search.ts
@@ -152,7 +168,7 @@ personal-ai-kb/
 │   ├── search/
 │   └── api/
 ├── .env.example
-├── .env                      ← gitignore'da
+├── .gitignore
 ├── package.json
 ├── tsconfig.json
 └── jest.config.ts
@@ -160,16 +176,16 @@ personal-ai-kb/
 
 ---
 
-## API tasarımı
+## API design
 
 ### POST /api/ingest
 ```typescript
-// Request
+// Request body
 {
   type: "url" | "pdf" | "text",
-  content: string,    // URL için URL, text için içerik
-  title?: string,     // opsiyonel başlık override
-  file?: File         // PDF upload için
+  content: string,    // URL string, plain text, or Markdown
+  title?: string,     // optional title override
+  file?: File         // multipart, for PDF uploads
 }
 
 // Response
@@ -179,40 +195,61 @@ personal-ai-kb/
   title: string,
   processingTimeMs: number
 }
+
+// Error responses
+400 — missing or invalid fields
+422 — content could not be parsed (bad PDF, blocked URL, etc.)
+500 — internal error (DB write failed, embedding API down)
 ```
 
 ### POST /api/search
 ```typescript
-// Request
+// Request body
 {
   query: string,
-  limit?: number,     // default: 5
+  limit?: number,      // default: 5
   filter?: {
     type?: SourceType[],
-    dateFrom?: string,
+    dateFrom?: string, // ISO 8601
     dateTo?: string
   }
 }
 
 // Response
 {
-  answer: string,     // LLM'in ürettiği cevap
-  sources: [{
+  answer: string,      // LLM-generated answer with inline citations
+  sources: Array<{
     sourceId: string,
     title: string,
     url?: string,
-    excerpt: string,  // ilgili chunk
-    score: number,    // cosine similarity
-    chunkIndex: number
-  }]
+    excerpt: string,   // the chunk text used
+    score: number,     // cosine similarity (0–1)
+    chunkIndex: number,
+    pageNumber?: number
+  }>
 }
+```
+
+### LLM prompt template (in `src/llm/anthropic.ts`)
+```
+You are a personal knowledge assistant. Answer the user's question using only
+the provided source excerpts. Cite sources inline as [1], [2], etc.
+If the answer is not in the sources, say so — do not make up information.
+
+Sources:
+{{#each sources}}
+[{{index}}] {{title}} ({{date}})
+{{excerpt}}
+{{/each}}
+
+Question: {{query}}
 ```
 
 ---
 
-## Kabul edilen paketler
+## Approved packages
 
-Aşağıdakiler dışında paket eklemeden önce DECISIONS.md'e yaz:
+Add any package outside this list to docs/DECISIONS.md first:
 
 ```json
 {
@@ -221,14 +258,16 @@ Aşağıdakiler dışında paket eklemeden önce DECISIONS.md'e yaz:
     "react": "18.x",
     "typescript": "5.x",
     "@prisma/client": "latest",
+    "@anthropic-ai/sdk": "latest",
+    "openai": "latest",
     "playwright": "latest",
     "pdf-parse": "latest",
     "@mozilla/readability": "latest",
-    "openai": "latest",
-    "@anthropic-ai/sdk": "latest",
+    "jsdom": "latest",
     "winston": "latest",
     "zod": "latest",
-    "tailwindcss": "latest"
+    "tailwindcss": "latest",
+    "@shadcn/ui": "latest"
   },
   "devDependencies": {
     "prisma": "latest",
@@ -244,47 +283,28 @@ Aşağıdakiler dışında paket eklemeden önce DECISIONS.md'e yaz:
 
 ## Environment variables
 
-```bash
-# .env.example
-
-# Database
-DATABASE_URL="postgresql://localhost:5432/personal_kb"
-
-# Embedding
-EMBEDDING_PROVIDER="openai"          # openai | local
-OPENAI_API_KEY=""
-OLLAMA_BASE_URL="http://localhost:11434"  # local için
-
-# LLM
-LLM_PROVIDER="anthropic"             # anthropic | local
-ANTHROPIC_API_KEY=""
-
-# App
-NODE_ENV="development"
-LOG_LEVEL="info"
-MAX_CHUNK_SIZE=512
-CHUNK_OVERLAP=64
-SEARCH_TOP_K=5
-```
+See `.env.example` for the full list with descriptions.
 
 ---
 
-## Performans hedefleri
+## Performance targets
 
-| Operasyon | Hedef |
-|-----------|-------|
-| URL ingestion | < 10 saniye |
-| PDF ingestion (10 sayfa) | < 15 saniye |
-| Semantic search (100 belge) | < 500ms |
-| Semantic search (10.000 belge) | < 2 saniye |
+| Operation | Target |
+|-----------|--------|
+| URL ingestion | < 10 seconds |
+| PDF ingestion (10 pages) | < 15 seconds |
+| Semantic search (100 docs) | < 500 ms |
+| Semantic search (10,000 docs) | < 2 seconds |
 
-10.000 belge için pgvector IVFFLAT index yeterli. 100k+ olursa HNSW index'e geç.
+For 10k documents, pgvector IVFFLAT index is sufficient.
+Switch to HNSW index if the collection exceeds 100k documents.
 
 ---
 
-## Güvenlik notları
+## Security notes
 
-- API endpoint'leri şimdilik auth yok (local kullanım)
-- v1.1'de NextAuth.js ekle (Google OAuth yeterli)
-- `.env` asla commit'e gitmesin
-- Yüklenen PDF'ler `uploads/` klasöründe, gitignore'da
+- No authentication in MVP (local / personal use)
+- Add NextAuth.js (Google OAuth) in v1.1
+- `.env` must never be committed — it's in `.gitignore`
+- Uploaded PDFs go in `uploads/` — also in `.gitignore`
+- Never log API keys, even at debug level
