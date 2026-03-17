@@ -333,5 +333,16 @@
 4. Build HTML structure: `<html>`, `<body>` with Tailwind utilities (max-width container, padding, dark background)
 5. Render `{children}` slot for page-specific content; no tests needed for layout
 
+---
+
+## T-030: Write `SearchBar.tsx`
+
+**Steps:**
+1. Create `src/components/SearchBar.tsx` as a client component (use 'use client' directive)
+2. Define `SearchBarProps` type: `query: string; loading?: boolean; onSubmit: (query: string) => void`
+3. Implement controlled input: state tracks user typing, submit fires onSubmit callback on Enter key or button click
+4. Add loading spinner (simple CSS spinner or text indicator) that displays when loading is true
+5. Write `__tests__/components/SearchBar.test.tsx` with tests covering: render, input changes, submit on Enter, submit on button click, loading state display
+
 
 

@@ -162,7 +162,7 @@
 
 ## Phase 7 — UI
 
-- [ ] **T-029** Write `src/app/layout.tsx` — Tailwind base layout, metadata, font setup
+- [x] **T-029** Write `src/app/layout.tsx` — Tailwind base layout, metadata, font setup
 - [ ] **T-030** Write `SearchBar.tsx` — controlled input, loading spinner, keyboard submit (Enter)
 - [ ] **T-031** Write `SearchResults.tsx` — answer text block + source cards below
 - [ ] **T-032** Write `SourceBadge.tsx` — type icon, domain name, formatted date, similarity score
