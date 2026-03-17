@@ -64,7 +64,7 @@
     ```
   - Unit tests with mocked `$queryRaw`
 
-- [ ] **T-016** Write `src/storage/index.ts`
+- [x] **T-016** Write `src/storage/index.ts`
   - `saveDocument(source: CreateSourceInput, chunks: Chunk[], embeddings: number[][]): Promise<string>` — returns sourceId
   - Wraps metadata + vector inserts in a logical transaction (delete source on failure)
 
