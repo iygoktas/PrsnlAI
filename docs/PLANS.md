@@ -438,5 +438,21 @@
 4. Assert search latency < 500 ms
 5. Clean up all created sources after the test
 
+---
+
+## T-040: Complete UI redesign — dark theme, two-panel layout, editorial aesthetic
+
+**Steps:**
+1. **Setup fonts & CSS variables**: Update `src/app/layout.tsx` with `Instrument Serif` and `IBM Plex Mono` from Google Fonts; define CSS variables for dark palette (#0D0D0D bg, #F2F0EB text, #C8922A accent, #2A2A2A border, #1A1A1A hover)
+2. **Create Sidebar component**: Build `src/components/Sidebar.tsx` (fixed 320px left panel, sticky, sources list with type icons, +Add button in header)
+3. **Rewrite SearchBar**: Update `src/components/SearchBar.tsx` with underline-only style, IBM Plex Mono font, animated `...` loading state, Enter-to-submit with `↵` hint
+4. **Create AnswerBlock**: Rename `SearchResults.tsx` → `AnswerBlock.tsx`, split into answer zone (amber left border, serif body, superscript citations) and sources zone (compact cards with citation number, title, score %)
+5. **Update SourceBadge**: Rewrite to display score as percentage (`92%` not `0.92`), date formatted as `"Mar 2025"` in mono
+6. **Rewrite AddContentForm**: Convert to modal overlay (`fixed inset-0`) triggered from Sidebar +button; add amber progress bar at bottom; show toast on success/error; auto-close after 1.2s on success
+7. **Update page layout**: Rewrite `src/app/page.tsx` with two-panel CSS Grid (`grid-cols-[320px_1fr]`), left = Sidebar, right = SearchBar + AnswerBlock
+8. **Mobile responsive**: Add responsive breakpoint (<768px) that collapses left panel to hamburger drawer
+9. **Redirect /add**: Update `src/app/add/page.tsx` to redirect to `/` since modal form handles ingestion
+10. **Install lucide-react**: Run `npm install lucide-react` for type icons (Globe, FileText, AlignLeft)
+11. **Tests & commit**: Ensure all tests still pass; git commit with type `feat(ui)`
 
 

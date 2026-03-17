@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Instrument_Serif, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const jetbrainsMono = JetBrains_Mono({
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-serif",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
   variable: "--font-mono",
 });
 
@@ -24,14 +31,29 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <style>{`
+          :root {
+            --font-serif: ${instrumentSerif.style.fontFamily};
+            --font-mono: ${ibmPlexMono.style.fontFamily};
+            --color-bg: #0D0D0D;
+            --color-surface: #111111;
+            --color-border: #2A2A2A;
+            --color-text: #F2F0EB;
+            --color-muted: #8B8B8B;
+            --color-accent: #C8922A;
+          }
+        `}</style>
+      </head>
       <body
-        className={`${jetbrainsMono.variable} bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 antialiased font-mono`}
+        className={`${instrumentSerif.variable} ${ibmPlexMono.variable} antialiased`}
+        style={{
+          backgroundColor: "var(--color-bg)",
+          color: "var(--color-text)",
+          fontFamily: "var(--font-mono)",
+        }}
       >
-        <div className="min-h-screen w-full">
-          <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-            {children}
-          </main>
-        </div>
+        {children}
       </body>
     </html>
   );

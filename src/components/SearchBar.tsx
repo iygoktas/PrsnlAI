@@ -20,10 +20,28 @@ interface SearchBarProps {
 }
 
 /**
- * SearchBar component — controlled input with loading indicator and keyboard submit
+ * SearchBar component — underline-only style with animated loading indicator
  */
-export function SearchBar({ query, loading = false, onSubmit }: SearchBarProps) {
+export function SearchBar({
+  query,
+  loading = false,
+  onSubmit,
+}: SearchBarProps) {
   const [inputValue, setInputValue] = useState(query);
+  const [isFocused, setIsFocused] = useState(false);
+  const [dotCount, setDotCount] = useState(0);
+
+  // Animate dots during loading
+  React.useEffect(() => {
+    if (!loading) {
+      setDotCount(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setDotCount((prev) => (prev + 1) % 4);
+    }, 300);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleSubmit = () => {
     if (inputValue.trim()) {
@@ -37,63 +55,49 @@ export function SearchBar({ query, loading = false, onSubmit }: SearchBarProps) 
     }
   };
 
+  const loadingDots = loading ? '.'.repeat(dotCount) : '';
+
   return (
-    <div className="w-full">
-      <div className="flex gap-2">
+    <div
+      className="w-full border-b"
+      style={{
+        borderColor: 'var(--color-border)',
+      }}
+    >
+      <div className="relative flex items-center px-0 py-4">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search your knowledge base..."
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={`${loading ? '' : 'Ask anything about your sources…'}${loadingDots}`}
           disabled={loading}
-          className="flex-1 px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-50 dark:placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          className="w-full bg-transparent outline-none"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.875rem',
+            color: 'var(--color-text)',
+            caretColor: 'var(--color-accent)',
+            paddingRight: isFocused ? '2rem' : '0',
+            transition: 'padding-right 0.15s ease',
+          }}
           aria-label="Search query"
         />
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !inputValue.trim()}
-          className="px-6 py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors flex items-center gap-2"
-          aria-label="Submit search"
-        >
-          {loading ? (
-            <>
-              <Spinner />
-              <span>Searching...</span>
-            </>
-          ) : (
-            'Search'
-          )}
-        </button>
+        {isFocused && !loading && (
+          <div
+            className="absolute right-0 flex items-center gap-1"
+            style={{
+              color: 'var(--color-muted)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.75rem',
+            }}
+          >
+            <span>↵</span>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-/**
- * Simple loading spinner component
- */
-function Spinner() {
-  return (
-    <svg
-      className="w-4 h-4 animate-spin"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      />
-    </svg>
   );
 }

@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import Sidebar from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { SearchResults } from '@/components/SearchResults';
+import { AddContentForm } from '@/components/AddContentForm';
 import { type SearchResult } from '@/search/semantic';
+import type { Source } from '@prisma/client';
 
 interface SearchResponse {
   answer: string;
@@ -11,13 +14,29 @@ interface SearchResponse {
 }
 
 /**
- * Home page — search interface for the knowledge base
+ * Home page — two-panel layout with Sidebar and search/answer area
  */
 export default function Home() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [sources, setSources] = useState<Source[]>([]);
+
+  // Fetch sources list on mount
+  useEffect(() => {
+    const fetchSources = async () => {
+      try {
+        // TODO: Create /api/sources endpoint to list all sources
+        // For now, just use empty list
+        setSources([]);
+      } catch (err) {
+        console.error('Failed to fetch sources:', err);
+      }
+    };
+    fetchSources();
+  }, []);
 
   const handleSearch = useCallback(
     async (searchQuery: string) => {
@@ -54,41 +73,84 @@ export default function Home() {
     []
   );
 
+  const handleAddSuccess = useCallback(() => {
+    setShowAddModal(false);
+    // Refresh sources list
+    setSources([]);
+  }, []);
+
   return (
-    <main className="min-h-screen w-full py-8">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold">Personal AI Knowledge Base</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Search your knowledge base. Add content at <a href="/add" className="font-medium hover:underline">/add</a>.
-          </p>
+    <div
+      className="grid grid-cols-[320px_1fr] min-h-screen w-full"
+      style={{
+        backgroundColor: 'var(--color-bg)',
+      }}
+    >
+      {/* Left panel: Sidebar */}
+      <Sidebar sources={sources} onAddClick={() => setShowAddModal(true)} />
+
+      {/* Right panel: Search and results */}
+      <main
+        className="ml-80 overflow-y-auto"
+        style={{
+          backgroundColor: 'var(--color-bg)',
+        }}
+      >
+        <div className="pt-16 px-8 max-w-3xl mx-auto pb-12">
+          {/* Search bar */}
+          <SearchBar query={query} loading={isLoading} onSubmit={handleSearch} />
+
+          {/* Error message */}
+          {error && (
+            <div
+              className="mt-6 p-4 border rounded-sm"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: '#FF6B6B',
+              }}
+            >
+              <p
+                className="text-sm"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                {error}
+              </p>
+            </div>
+          )}
+
+          {/* Search results */}
+          {searchResults && (
+            <SearchResults
+              answer={searchResults.answer}
+              sources={searchResults.sources}
+            />
+          )}
+
+          {/* Empty state */}
+          {!isLoading && !searchResults && !error && !query && (
+            <div
+              className="mt-12 text-center py-8"
+              style={{
+                color: 'var(--color-muted)',
+                fontFamily: 'var(--font-serif)',
+              }}
+            >
+              <p className="italic">Start searching your knowledge base</p>
+            </div>
+          )}
         </div>
+      </main>
 
-        {/* Search bar */}
-        <SearchBar query={query} loading={isLoading} onSubmit={handleSearch} />
-
-        {/* Error message */}
-        {error && (
-          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
-            <p className="font-medium">Error</p>
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* Search results */}
-        {searchResults && (
-          <SearchResults answer={searchResults.answer} sources={searchResults.sources} />
-        )}
-
-        {/* Empty state */}
-        {!isLoading && !searchResults && !error && !query && (
-          <div className="mt-12 text-center text-gray-500 dark:text-gray-400">
-            <p className="text-lg">Start by searching your knowledge base.</p>
-            <p className="mt-2 text-sm">Or <a href="/add" className="font-medium hover:underline">add new content</a>.</p>
-          </div>
-        )}
-      </div>
-    </main>
+      {/* Add content modal */}
+      {showAddModal && (
+        <AddContentForm
+          onClose={() => setShowAddModal(false)}
+          onSuccess={handleAddSuccess}
+        />
+      )}
+    </div>
   );
 }

@@ -181,6 +181,97 @@
 
 ---
 
+## Phase 9 — UI Redesign
+
+- [x] **T-040** Complete UI redesign: professional, minimal, research-tool aesthetic inspired by NotebookLM
+
+  ### Design direction
+  Dark theme. Editorial, research-tool feel. Think: a serious knowledge interface — not a chatbot, not a dashboard.
+  The palette is near-black backgrounds (`#0D0D0D`, `#111111`) with off-white text (`#F2F0EB`), a single warm amber accent (`#C8922A`) for interactive elements and scores, and muted slate borders (`#2A2A2A`). No gradients, no purples, no glows. Clarity through contrast and spacing.
+
+  Font pairing:
+  - Display/headings: `Instrument Serif` (Google Fonts) — editorial authority
+  - Body/UI: `IBM Plex Mono` (Google Fonts) — technical precision, monospaced for metadata like scores, dates, chunk counts
+
+  ### Layout — two-panel, no scroll trap
+  Replace the single-column centered layout with a **persistent two-panel split** (CSS Grid, `minmax`):
+  - **Left panel** (`320px` fixed, full viewport height, sticky): Sources sidebar — lists all ingested sources as compact rows with type icon, truncated title, domain, and date. "Add content" lives here as a subtle `+` icon button at the top. No scrolling the whole page just to see sources.
+  - **Right panel** (flex-1, scrollable independently): Search area at the top, answer block below, cited source cards inline within the answer.
+
+  Narrow viewport (<768px): panels stack vertically, left panel collapses to a slide-in drawer toggled by a hamburger icon.
+
+  ### Component-level specifications
+
+  **`src/app/layout.tsx`**
+  - Import `Instrument Serif` and `IBM Plex Mono` from `next/font/google`
+  - Set CSS variables: `--font-serif`, `--font-mono`, `--color-bg`, `--color-surface`, `--color-border`, `--color-text`, `--color-muted`, `--color-accent`
+  - Apply `bg-[#0D0D0D] text-[#F2F0EB]` to `<body>`
+
+  **`src/components/Sidebar.tsx`** (new component)
+  - Fixed left panel, `h-screen`, `overflow-y-auto`, separated from right panel by a `1px` border in `--color-border`
+  - Header: app name in `Instrument Serif` italic, small — e.g. *"memex"* or whatever the project name is — with the `+` add button right-aligned
+  - Source list: each row is `48px` tall, `px-4`, hover state `bg-[#1A1A1A]`, active/selected state left `3px` amber border
+  - Each source row: `[TYPE_ICON] [TITLE truncated] [DATE mono small]` on one line; domain in `--color-muted` on the second line
+  - Empty state: centered italic serif text "No sources yet. Add a URL, PDF, or text."
+  - Type icons: use `lucide-react` — `Globe` for URL, `FileText` for PDF, `AlignLeft` for TEXT; `16px`, muted color
+
+  **`src/components/SearchBar.tsx`** (rewrite)
+  - Full-width, no rounded pill — use `rounded-none` or very subtle `rounded-sm`
+  - `border-b border-[#2A2A2A]` only (underline style, no box)
+  - Font: `IBM Plex Mono`, `text-sm`
+  - Placeholder: `"Ask anything about your sources…"`
+  - Loading state: replace spinner with a subtle animated `...` suffix in amber appended to placeholder text; no spinning icon
+  - Submit: Enter key only; no visible button (add a `↵` hint in `--color-muted` on the right when focused)
+
+  **`src/components/AnswerBlock.tsx`** (rewrite `SearchResults.tsx`)
+  - Split into two clear zones: **Answer** and **Sources**
+  - Answer zone:
+    - Thin amber left border (`border-l-2 border-[#C8922A]`), `pl-4`
+    - Body text in `Instrument Serif`, `text-base leading-relaxed`
+    - Inline citation markers: superscript numbers `[1]`, `[2]` etc. styled in amber mono — these correspond to the source cards below
+    - Fade-in animation on mount (`opacity-0 → opacity-100`, `200ms ease`)
+  - Sources zone (below the answer, same panel):
+    - Section label: `SOURCES` in `IBM Plex Mono`, `text-xs tracking-widest`, `--color-muted`, uppercase
+    - Source cards: horizontal list (`flex flex-wrap gap-2`), each card is compact (`px-3 py-2`), `border border-[#2A2A2A]`, `rounded-sm`
+    - Card content: `[citation number in amber] [title truncated 40ch] [score as percentage in mono]`
+    - Hover: `border-[#C8922A]` transition `150ms`
+
+  **`src/components/SourceBadge.tsx`** (update)
+  - Used inside source cards in AnswerBlock
+  - Score displayed as `"92%"` not `"0.92"` — multiply by 100, round
+  - Date formatted as `"Mar 2025"` using `IBM Plex Mono text-xs`
+
+  **`src/components/AddContentForm.tsx`** (rewrite)
+  - Triggered from the `+` button in Sidebar; renders as a **modal overlay** (`fixed inset-0 bg-black/70 backdrop-blur-sm z-50`)
+  - Modal panel: `max-w-lg mx-auto mt-24`, dark surface `bg-[#111111]`, `border border-[#2A2A2A]`, `rounded-sm`, `p-6`
+  - Tab switcher: three text tabs (`URL` / `TEXT` / `PDF`), no pill/box style — just an amber underline on active tab, mono font
+  - Inputs: same underline-only style as SearchBar
+  - Progress: a `1px` amber line that grows from 0% to 100% width at the bottom of the modal during ingestion (CSS transition on `width`)
+  - Success: modal auto-closes after `1.2s`; a toast appears bottom-right: `[✓] "Title…" added — 42 chunks` in mono, dark surface, amber check
+  - Error: toast with `[✗]` in red, error message in mono
+
+  **`src/app/page.tsx`** (rewrite)
+  - Two-panel CSS grid layout: `grid grid-cols-[320px_1fr]`
+  - Left: `<Sidebar />`
+  - Right: `<main>` with `pt-16 px-8 max-w-3xl` — vertically centered SearchBar until first query, then pushes to top with answer below
+
+  **`src/app/add/page.tsx`**
+  - This route can now redirect to `/` — the add form lives in the modal triggered from Sidebar. Redirect with `next/navigation` `redirect('/')`.
+
+  ### Install requirements
+  ```
+  npm install lucide-react
+  ```
+  `next/font/google` is already available in Next.js 14 — no extra install needed.
+
+  ### Do not change
+  - All API routes (`/api/ingest`, `/api/search`) — zero backend changes
+  - All logic files under `src/embedding/`, `src/storage/`, `src/ingestion/`, `src/llm/`, `src/search/`
+  - Prisma schema and migrations
+  - All existing tests
+
+---
+
 ## Backlog (post-MVP)
 
 - [ ] **B-001** Twitter/X thread ingestion via URL
