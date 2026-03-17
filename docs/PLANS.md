@@ -189,3 +189,16 @@
 5. Return `{ title, content: cleaned, type: 'TEXT' }`
 6. Write `__tests__/ingestion/text.test.ts` covering: plain text, markdown, whitespace, empty input, control characters
 
+---
+
+## T-018: Write src/ingestion/pdf.ts
+
+**Steps:**
+1. Create type definition for PdfIngestionResult (title, content, type, pageCount)
+2. Implement `ingestPdf(buffer: Buffer): Promise<PdfIngestionResult>` using pdf-parse library
+3. Extract text while tracking page numbers; throw IngestionError if text extraction fails (scanned PDF)
+4. Detect scanned PDFs: if less than 5% of expected text chars extracted, raise error
+5. Combine all pages into single content string with page markers
+6. Extract title from PDF metadata (name) or filename; default to "Untitled PDF"
+7. Write `__tests__/ingestion/pdf.test.ts` with mocked pdf-parse covering: valid PDF, scanned PDF, corrupt PDF, extraction errors
+
