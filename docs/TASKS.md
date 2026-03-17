@@ -25,7 +25,7 @@
   - Uses `MAX_CHUNK_SIZE` and `CHUNK_OVERLAP` from config
   - Write unit tests: short text, long text, empty string, single-word input
 
-- [ ] **T-011** Write `src/embedding/openai.ts`
+- [x] **T-011** Write `src/embedding/openai.ts`
   - Uses `text-embedding-3-small`
   - Accepts `string[]`, returns `number[][]`
   - Batches in groups of 100 to stay within API limits
