@@ -164,3 +164,16 @@
 4. Handle pgvector vector serialization (format embeddings as `[val1,val2,...]::vector`)
 5. Write `__tests__/storage/vector.test.ts` with mocked `$executeRaw` and `$queryRaw` covering inserts, similarity search, and error cases
 
+---
+
+## T-016: Write src/storage/index.ts
+
+**Steps:**
+1. Create type definition for ChunkInput (content, chunkIndex, pageNumber)
+2. Implement `saveDocument(source: CreateSourceInput, chunks: ChunkInput[], embeddings: number[][]): Promise<string>` orchestrator
+3. Create source via metadata.createSource()
+4. Pair chunks with embeddings and create ChunkWithEmbedding objects
+5. Insert chunks+embeddings via vector.insertChunks(); on error, delete source and re-throw
+6. Return sourceId
+7. Write `__tests__/storage/index.test.ts` with mocked metadata/vector modules covering success, partial failures, and error recovery
+
