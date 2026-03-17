@@ -35,6 +35,17 @@
 
 ---
 
+## T-007: Write src/lib/errors.ts — custom error classes
+
+**Steps:**
+1. Define three custom error classes: `IngestionError`, `SearchError`, `EmbeddingError`
+2. Each extends `Error` and adds a `code` field for error categorization
+3. Constructor accepts `message` and optional `code` parameter (defaults to 'UNKNOWN')
+4. Maintain standard Error prototype chain with proper `name` property
+5. Write `__tests__/lib/errors.test.ts` — instantiate each, verify inheritance, check code field, test default code
+
+---
+
 ## T-005: Write src/lib/config.ts — Zod-parsed env variables
 
 **Steps:**
