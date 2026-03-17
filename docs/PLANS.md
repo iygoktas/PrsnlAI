@@ -393,5 +393,17 @@
 5. Display SearchResults below only when results are available; show error message if search fails
 6. Write `__tests__/app/page.test.tsx` covering: rendering, search submission, loading state, results display, error handling
 
+---
+
+## T-035: Write `src/app/add/page.tsx`
+
+**Steps:**
+1. Create page component (client component with 'use client') that composes AddContentForm
+2. Add state management: track success message and success status for post-submission feedback
+3. Implement onSuccess callback: show success toast with sourceId, title, and chunks created; optionally redirect or show summary
+4. Implement onError callback: log error and display error toast
+5. Display page title/heading and AddContentForm component
+6. Write `__tests__/app/add/page.test.tsx` covering: rendering, form submission success/error, page title
+
 
 
