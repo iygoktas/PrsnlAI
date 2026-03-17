@@ -71,24 +71,16 @@ export default function Home() {
   }, [fetchSources]);
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '320px 1fr',
-        minHeight: '100vh',
-        backgroundColor: 'var(--bg-base)',
-      }}
-    >
-      {/* Left panel: Sidebar */}
+    <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh' }}>
+      {/* Left panel: fixed sidebar */}
       <Sidebar sources={sources} onAddClick={() => setShowAddModal(true)} />
 
-      {/* Right panel */}
+      {/* Right panel: offset by sidebar width */}
       <main
         style={{
           marginLeft: '320px',
-          overflowY: 'auto',
-          backgroundColor: 'var(--bg-base)',
           minHeight: '100vh',
+          backgroundColor: 'var(--bg-base)',
         }}
       >
         <div
