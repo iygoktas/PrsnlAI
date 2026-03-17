@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'playwright', 'winston'],
-};
+const nextConfig = {};
 
 module.exports = nextConfig;

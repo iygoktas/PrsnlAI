@@ -3,17 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Menlo,
-    Courier, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: #0d0d0d;
+  --color-surface: #111111;
+  --color-border: #2a2a2a;
+  --color-text: #f2f0eb;
+  --color-muted: #8b8b8b;
+  --color-accent: #c8922a;
 }
 
 @layer base {

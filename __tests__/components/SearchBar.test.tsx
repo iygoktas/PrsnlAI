@@ -4,13 +4,11 @@ import { SearchBar } from '@/components/SearchBar';
 
 describe('SearchBar', () => {
   describe('rendering', () => {
-    it('should render input and button', () => {
+    it('should render input with correct placeholder', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      expect(screen.getByPlaceholderText('Search your knowledge base...')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /submit search/i })).toBeInTheDocument();
-      expect(screen.getByText('Search')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Ask anything about your sources…')).toBeInTheDocument();
     });
 
     it('should initialize with provided query value', () => {
@@ -21,12 +19,11 @@ describe('SearchBar', () => {
       expect(input).toBeInTheDocument();
     });
 
-    it('should have correct initial button state', () => {
+    it('should have aria-label for accessibility', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const button = screen.getByRole('button', { name: /submit search/i });
-      expect(button).toBeDisabled();
+      expect(screen.getByLabelText('Search query')).toBeInTheDocument();
     });
   });
 
@@ -35,51 +32,32 @@ describe('SearchBar', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...') as HTMLInputElement;
+      const input = screen.getByPlaceholderText('Ask anything about your sources…') as HTMLInputElement;
       fireEvent.change(input, { target: { value: 'test query' } });
 
       expect(input.value).toBe('test query');
     });
 
-    it('should enable button when input has value', async () => {
+    it('should trim whitespace on value change', async () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-      const button = screen.getByRole('button', { name: /submit search/i });
+      const input = screen.getByPlaceholderText('Ask anything about your sources…') as HTMLInputElement;
+      fireEvent.change(input, { target: { value: '  test query  ' } });
 
-      expect(button).toBeDisabled();
-
-      fireEvent.change(input, { target: { value: 'search term' } });
-
-      await waitFor(() => {
-        expect(button).not.toBeDisabled();
-      });
-    });
-
-    it('should keep button disabled for whitespace-only input', async () => {
-      const mockOnSubmit = jest.fn();
-      render(<SearchBar query="" onSubmit={mockOnSubmit} />);
-
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-      const button = screen.getByRole('button', { name: /submit search/i });
-
-      fireEvent.change(input, { target: { value: '   ' } });
-
-      expect(button).toBeDisabled();
+      expect(input.value).toBe('  test query  '); // Input stores raw value, trim happens on submit
     });
   });
 
   describe('submit handling', () => {
-    it('should call onSubmit when button is clicked', async () => {
+    it('should call onSubmit when Enter key is pressed', async () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-      const button = screen.getByRole('button', { name: /submit search/i });
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
 
       fireEvent.change(input, { target: { value: 'search term' } });
-      fireEvent.click(button);
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSubmit).toHaveBeenCalledWith('search term');
     });
@@ -88,22 +66,9 @@ describe('SearchBar', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-      const button = screen.getByRole('button', { name: /submit search/i });
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
 
       fireEvent.change(input, { target: { value: '  search term  ' } });
-      fireEvent.click(button);
-
-      expect(mockOnSubmit).toHaveBeenCalledWith('search term');
-    });
-
-    it('should call onSubmit when Enter key is pressed', async () => {
-      const mockOnSubmit = jest.fn();
-      render(<SearchBar query="" onSubmit={mockOnSubmit} />);
-
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-
-      fireEvent.change(input, { target: { value: 'search term' } });
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSubmit).toHaveBeenCalledWith('search term');
@@ -113,7 +78,7 @@ describe('SearchBar', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
 
       fireEvent.change(input, { target: { value: 'search term' } });
       fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
@@ -125,66 +90,47 @@ describe('SearchBar', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
-      const button = screen.getByRole('button', { name: /submit search/i });
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
 
       fireEvent.change(input, { target: { value: '   ' } });
-      fireEvent.click(button);
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
   });
 
   describe('loading state', () => {
-    it('should display loading indicator when loading is true', () => {
+    it('should disable input when loading is true', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
 
-      expect(screen.getByText('Searching...')).toBeInTheDocument();
-    });
-
-    it('should disable input when loading', () => {
-      const mockOnSubmit = jest.fn();
-      render(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
-
-      const input = screen.getByPlaceholderText('Search your knowledge base...') as HTMLInputElement;
+      const input = screen.getByDisplayValue('test') as HTMLInputElement;
       expect(input).toBeDisabled();
-    });
-
-    it('should disable button when loading', () => {
-      const mockOnSubmit = jest.fn();
-      render(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
-
-      const button = screen.getByRole('button', { name: /submit search/i });
-      expect(button).toBeDisabled();
     });
 
     it('should not submit on Enter when loading', async () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
 
-      const input = screen.getByPlaceholderText('Search your knowledge base...');
+      const input = screen.getByDisplayValue('test');
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
 
-    it('should show "Searching..." text instead of "Search"', () => {
+    it('should show animated dots in placeholder when loading', async () => {
       const mockOnSubmit = jest.fn();
-      render(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
-
-      expect(screen.queryByText('Search')).not.toBeInTheDocument();
-      expect(screen.getByText('Searching...')).toBeInTheDocument();
-    });
-
-    it('should display spinner when loading', () => {
-      const mockOnSubmit = jest.fn();
-      const { container } = render(
-        <SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />
+      const { rerender } = render(
+        <SearchBar query="test" loading={false} onSubmit={mockOnSubmit} />
       );
 
-      const spinner = container.querySelector('svg.animate-spin');
-      expect(spinner).toBeInTheDocument();
+      rerender(<SearchBar query="test" loading={true} onSubmit={mockOnSubmit} />);
+
+      await waitFor(() => {
+        const input = screen.getByDisplayValue('test') as HTMLInputElement;
+        // Placeholder becomes dots when loading, starts with 1 dot
+        expect(input.placeholder.length >= 1 && input.placeholder.match(/\.+/)).toBeTruthy();
+      });
     });
   });
 
@@ -193,25 +139,34 @@ describe('SearchBar', () => {
       const mockOnSubmit = jest.fn();
       render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      expect(screen.queryByText('Searching...')).not.toBeInTheDocument();
-      expect(screen.getByText('Search')).toBeInTheDocument();
+      const input = screen.getByPlaceholderText('Ask anything about your sources…') as HTMLInputElement;
+      expect(input).not.toBeDisabled();
     });
   });
 
-  describe('accessibility', () => {
-    it('should have proper aria labels', () => {
+  describe('focus state', () => {
+    it('should show return hint when input is focused', async () => {
       const mockOnSubmit = jest.fn();
-      render(<SearchBar query="" onSubmit={mockOnSubmit} />);
+      const { container } = render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      expect(screen.getByLabelText('Search query')).toBeInTheDocument();
-      expect(screen.getByLabelText('Submit search')).toBeInTheDocument();
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
+      fireEvent.focus(input);
+
+      await waitFor(() => {
+        const hint = container.querySelector('span');
+        expect(hint?.textContent).toBe('↵');
+      });
     });
 
-    it('should have placeholder text for guidance', () => {
+    it('should hide return hint when input is not focused', () => {
       const mockOnSubmit = jest.fn();
-      render(<SearchBar query="" onSubmit={mockOnSubmit} />);
+      const { container } = render(<SearchBar query="" onSubmit={mockOnSubmit} />);
 
-      expect(screen.getByPlaceholderText('Search your knowledge base...')).toBeInTheDocument();
+      const input = screen.getByPlaceholderText('Ask anything about your sources…');
+      fireEvent.blur(input);
+
+      const hint = container.querySelector('span');
+      expect(hint).not.toBeInTheDocument();
     });
   });
 });

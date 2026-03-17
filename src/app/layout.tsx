@@ -31,20 +31,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <style>{`
-          :root {
-            --font-serif: ${instrumentSerif.style.fontFamily};
-            --font-mono: ${ibmPlexMono.style.fontFamily};
-            --color-bg: #0D0D0D;
-            --color-surface: #111111;
-            --color-border: #2A2A2A;
-            --color-text: #F2F0EB;
-            --color-muted: #8B8B8B;
-            --color-accent: #C8922A;
-          }
-        `}</style>
-      </head>
       <body
         className={`${instrumentSerif.variable} ${ibmPlexMono.variable} antialiased`}
         style={{
