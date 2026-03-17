@@ -20,7 +20,7 @@
 
 ## Phase 1 — Embedding infrastructure
 
-- [ ] **T-010** Write `src/embedding/chunker.ts`
+- [x] **T-010** Write `src/embedding/chunker.ts`
   - Accepts a string, returns `Array<{ content: string; chunkIndex: number; tokenEstimate: number }>`
   - Uses `MAX_CHUNK_SIZE` and `CHUNK_OVERLAP` from config
   - Write unit tests: short text, long text, empty string, single-word input
