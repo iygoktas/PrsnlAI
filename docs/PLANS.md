@@ -355,5 +355,18 @@
 4. Render each source as a card below with source metadata: title, URL (if present), source type icon, date, similarity score
 5. Write `__tests__/components/SearchResults.test.tsx` covering: render, empty results, multiple sources, proper formatting
 
+---
+
+## T-032: Write `SourceBadge.tsx`
+
+**Steps:**
+1. Create `src/components/SourceBadge.tsx` as a client component
+2. Define `SourceBadgeProps` type: `source: SearchResult` and optional styling props
+3. Extract and display source type icon (emoji) based on source.type
+4. Extract and display domain name from source.url (or "Local" if no URL)
+5. Format and display the source creation date (Today/Yesterday/Xd ago/etc.)
+6. Display similarity score as a percentage
+7. Write `__tests__/components/SourceBadge.test.tsx` covering: rendering, type icons, date formatting, domain extraction, score display
+
 
 
