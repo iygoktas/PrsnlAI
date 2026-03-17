@@ -202,3 +202,15 @@
 6. Extract title from PDF metadata (name) or filename; default to "Untitled PDF"
 7. Write `__tests__/ingestion/pdf.test.ts` with mocked pdf-parse covering: valid PDF, scanned PDF, corrupt PDF, extraction errors
 
+---
+
+## T-019: Write src/ingestion/url.ts
+
+**Steps:**
+1. Create type definition for UrlIngestionResult (title, content, type, url, publishDate)
+2. Implement `ingestUrl(urlString: string): Promise<UrlIngestionResult>` with Playwright browser
+3. Launch Playwright (browser, context, page) with 15s timeout; throw IngestionError on timeout/network failure
+4. Use @mozilla/readability to extract article from page.content(); extract metadata (title, author, publish date)
+5. Validate URL and extracted content (>50 chars); close browser; return result
+6. Write `__tests__/ingestion/url.test.ts` with mocked Playwright covering: valid page, timeout, network error, no content
+
