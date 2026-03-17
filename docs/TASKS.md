@@ -167,7 +167,7 @@
 - [x] **T-031** Write `SearchResults.tsx` — answer text block + source cards below
 - [x] **T-032** Write `SourceBadge.tsx` — type icon, domain name, formatted date, similarity score
 - [x] **T-033** Write `AddContentForm.tsx` — tabbed form (URL / Text / PDF), progress indicator, success/error toast
-- [ ] **T-034** Write `src/app/page.tsx` — compose SearchBar + SearchResults; fetch from `/api/search`
+- [x] **T-034** Write `src/app/page.tsx` — compose SearchBar + SearchResults; fetch from `/api/search`
 - [ ] **T-035** Write `src/app/add/page.tsx` — compose AddContentForm; POST to `/api/ingest`
 
 ---
