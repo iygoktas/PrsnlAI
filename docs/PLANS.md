@@ -24,6 +24,16 @@
 
 ---
 
+## T-004: Write Source and Chunk models in prisma/schema.prisma; run db:migrate
+
+**Steps:**
+1. Add `Source`, `Chunk` models and `SourceType` enum to `prisma/schema.prisma` exactly as specified in ARCHITECTURE.md
+2. Write `__tests__/prisma/schema.test.ts` — reads the schema file and asserts models, fields, and relations are present
+3. Run `npm run db:migrate` to push schema to Supabase (requires `.env` with valid `DATABASE_URL`/`DIRECT_URL`)
+4. Commit schema, test, and updated TASKS.md
+
+---
+
 ## T-003: Add pgvector migration
 
 **Steps:**

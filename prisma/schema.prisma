@@ -9,3 +9,32 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL") // required by Supabase for migrations
 }
+
+model Source {
+  id        String     @id @default(cuid())
+  type      SourceType
+  title     String
+  url       String?
+  filePath  String?
+  content   String     // raw text for full-text fallback
+  createdAt DateTime   @default(now())
+  chunks    Chunk[]
+}
+
+model Chunk {
+  id         String                      @id @default(cuid())
+  sourceId   String
+  source     Source                      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  content    String
+  chunkIndex Int
+  pageNumber Int?
+  embedding  Unsupported("vector(1536)")?
+  createdAt  DateTime                    @default(now())
+}
+
+enum SourceType {
+  URL
+  PDF
+  TEXT
+  TWEET
+}

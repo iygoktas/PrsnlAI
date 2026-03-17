@@ -9,7 +9,7 @@
 - [x] **T-001** Scaffold Next.js 14 project (TypeScript, App Router, Tailwind, ESLint)
 - [x] **T-002** Install and configure Prisma; connect to Supabase via `DATABASE_URL` and `DIRECT_URL`; create `.env.example`
 - [x] **T-003** Add pgvector migration: create a Prisma migration file that runs `CREATE EXTENSION IF NOT EXISTS vector` and the IVFFLAT index
-- [ ] **T-004** Write `Source` and `Chunk` models in `prisma/schema.prisma` exactly as defined in ARCHITECTURE.md; run `npm run db:migrate`
+- [x] **T-004** Write `Source` and `Chunk` models in `prisma/schema.prisma` exactly as defined in ARCHITECTURE.md; run `npm run db:migrate`
 - [ ] **T-005** Write `src/lib/config.ts` — parse all env variables with Zod, export typed config object; throw on missing required variables at startup
 - [ ] **T-006** Write `src/lib/logger.ts` — Winston logger; log level from `config.LOG_LEVEL`; JSON format in production, pretty in development
 - [ ] **T-007** Write `src/lib/errors.ts` — `IngestionError`, `SearchError`, `EmbeddingError` custom classes extending `Error` with a `code` field
