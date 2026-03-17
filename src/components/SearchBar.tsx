@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SearchBarProps {
   /**
@@ -32,7 +32,7 @@ export function SearchBar({
   const [dotCount, setDotCount] = useState(0);
 
   // Animate dots during loading
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading) {
       setDotCount(0);
       return;
