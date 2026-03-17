@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { POST } from '@/app/api/search/route';
 import { SearchError } from '@/lib/errors';
 import { NextRequest } from 'next/server';

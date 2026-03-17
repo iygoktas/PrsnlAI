@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { POST } from '@/app/api/ingest/route';
 import { IngestionError } from '@/lib/errors';
 import { NextRequest } from 'next/server';

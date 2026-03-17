@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     } else if (validatedData.type === 'url') {
       ingestionInput = {
         type: 'url',
-        content: validatedData.content, // URL string
+        url: validatedData.content, // URL string (validated as valid URL by Zod)
         title: validatedData.title,
       };
     } else {
