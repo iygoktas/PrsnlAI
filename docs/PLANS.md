@@ -24,6 +24,17 @@
 
 ---
 
+## T-006: Write src/lib/logger.ts — Winston logger
+
+**Steps:**
+1. Install `winston` if not already present
+2. Create logger with two transports: JSON format in production, colorized `printf` in development/test
+3. Log level read from `config.LOG_LEVEL`
+4. Write `__tests__/lib/logger.test.ts` — verify logger is created, has correct level, and correct format per NODE_ENV
+5. Commit
+
+---
+
 ## T-005: Write src/lib/config.ts — Zod-parsed env variables
 
 **Steps:**
