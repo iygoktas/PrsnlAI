@@ -4,7 +4,7 @@ import "./globals.css";
 
 const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400"],
   variable: "--font-serif",
 });
 
