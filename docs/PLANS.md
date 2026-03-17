@@ -119,3 +119,14 @@
 4. Throw `EmbeddingError` on non-retryable failures; require `OPENAI_API_KEY` via config
 5. Write `__tests__/embedding/openai.test.ts` with mocked OpenAI client covering: successful batch, rate-limit retry, final failure after max retries
 
+---
+
+## T-012: Write src/embedding/local.ts
+
+**Steps:**
+1. Create `src/embedding/local.ts` — export `embedWithOllama(texts: string[]): Promise<number[][]>`
+2. Call Ollama `/api/embeddings` endpoint with model from `OLLAMA_EMBEDDING_MODEL` config
+3. Same interface as openai.ts (batch handling, error handling with `EmbeddingError`)
+4. Handle Ollama connection errors gracefully (e.g., "Ollama server not running")
+5. Write `__tests__/embedding/local.test.ts` with mocked fetch covering: successful embedding, connection error, invalid response
+
