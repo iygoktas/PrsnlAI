@@ -368,5 +368,18 @@
 6. Display similarity score as a percentage
 7. Write `__tests__/components/SourceBadge.test.tsx` covering: rendering, type icons, date formatting, domain extraction, score display
 
+---
+
+## T-033: Write `AddContentForm.tsx`
+
+**Steps:**
+1. Create `src/components/AddContentForm.tsx` as a client component
+2. Implement tabbed interface with three tabs: URL, Text, PDF (use state to track active tab)
+3. Each tab has appropriate input form: URL tab has text input, Text tab has textarea, PDF tab has file input (accept only PDF)
+4. Add form state management: track input values, loading state, and toast messages (success/error)
+5. Implement upload functionality: POST to `/api/ingest` with FormData for PDF or JSON for others; show progress spinner while uploading
+6. Implement toast notification display: show success with sourceId/title/chunks count, or error with error message
+7. Write `__tests__/components/AddContentForm.test.tsx` covering: tab switching, form inputs, upload, success/error states, loading indicator, toast display
+
 
 
