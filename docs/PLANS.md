@@ -141,3 +141,15 @@
 4. Return calls to the appropriate provider based on config
 5. Write `__tests__/embedding/index.test.ts` with mocked providers covering: openai provider, local provider, invalid provider
 
+---
+
+## T-014: Write src/storage/metadata.ts
+
+**Steps:**
+1. Create type definitions (CreateSourceInput, SourceFilter) in a new file or inline
+2. Implement `createSource(data: CreateSourceInput): Promise<Source>` using Prisma create
+3. Implement `getSource(id: string): Promise<Source | null>` using findUnique (include chunks)
+4. Implement `listSources(filter?: SourceFilter): Promise<Source[]>` with type/date filtering (include chunks)
+5. Implement `deleteSource(id: string): Promise<void>` using delete (cascading handled by Prisma relation)
+6. Write `__tests__/storage/metadata.test.ts` with mocked Prisma client covering all four functions
+
