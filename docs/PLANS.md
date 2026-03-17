@@ -24,6 +24,17 @@
 
 ---
 
+## T-005: Write src/lib/config.ts — Zod-parsed env variables
+
+**Steps:**
+1. Define a Zod schema covering all variables in `.env.example` (DATABASE_URL, DIRECT_URL, provider flags, API keys, chunking constants, search constants, logging, NODE_ENV)
+2. Parse `process.env` with the schema; throw a descriptive error on missing required variables at module load time
+3. Export a typed `config` object — consumers import from `@/lib/config`
+4. Write `__tests__/lib/config.test.ts` — test valid env, missing required fields (error thrown), and numeric coercions
+5. Commit
+
+---
+
 ## T-004: Write Source and Chunk models in prisma/schema.prisma; run db:migrate
 
 **Steps:**
