@@ -130,3 +130,14 @@
 4. Handle Ollama connection errors gracefully (e.g., "Ollama server not running")
 5. Write `__tests__/embedding/local.test.ts` with mocked fetch covering: successful embedding, connection error, invalid response
 
+---
+
+## T-013: Write src/embedding/index.ts
+
+**Steps:**
+1. Create `src/embedding/index.ts` — export `embed(texts: string[]): Promise<number[][]>`
+2. Read `EMBEDDING_PROVIDER` from config (`openai` | `local`)
+3. Import both `embedWithOpenAI` and `embedWithOllama`
+4. Return calls to the appropriate provider based on config
+5. Write `__tests__/embedding/index.test.ts` with mocked providers covering: openai provider, local provider, invalid provider
+
