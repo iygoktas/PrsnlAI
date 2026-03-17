@@ -153,3 +153,14 @@
 5. Implement `deleteSource(id: string): Promise<void>` using delete (cascading handled by Prisma relation)
 6. Write `__tests__/storage/metadata.test.ts` with mocked Prisma client covering all four functions
 
+---
+
+## T-015: Write src/storage/vector.ts
+
+**Steps:**
+1. Create type definitions (ChunkWithEmbedding, ScoredChunk, VectorFilter)
+2. Implement `insertChunks(chunks: ChunkWithEmbedding[]): Promise<void>` — batch insert using Prisma `$executeRaw` with vector format
+3. Implement `similaritySearch(embedding: number[], topK: number, filter?: VectorFilter): Promise<ScoredChunk[]>` — use pgvector cosine distance `<=>` operator
+4. Handle pgvector vector serialization (format embeddings as `[val1,val2,...]::vector`)
+5. Write `__tests__/storage/vector.test.ts` with mocked `$executeRaw` and `$queryRaw` covering inserts, similarity search, and error cases
+
