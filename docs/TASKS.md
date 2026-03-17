@@ -129,7 +129,7 @@
   - Returns `SearchResult[]`
   - Unit tests
 
-- [ ] **T-025** Write `src/search/rerank.ts`
+- [x] **T-025** Write `src/search/rerank.ts`
   - Drops results below `SIMILARITY_THRESHOLD` (from config)
   - Keeps max 2 chunks per source (pick highest-scoring ones)
   - Sorts by score descending

@@ -285,3 +285,16 @@
 5. Sort: by score descending, so top results appear first
 6. Write `__tests__/search/rerank.test.ts` with tests covering: threshold filtering, per-source deduplication, sorting, edge cases
 
+---
+
+## T-026: Write `src/search/index.ts`
+
+**Steps:**
+1. Define `SearchOptions` type (query, limit?, filters?); define `SearchResponse` type (answer, sources: SearchResult[])
+2. Implement `search(query: string, options?: SearchOptions): Promise<SearchResponse>` orchestrator
+3. Call `semanticSearch(query, options.filters)` to get initial results
+4. Call `rerank(results)` to filter, deduplicate, sort
+5. Call `generateAnswer(query, reranked)` to get LLM-generated answer with citations
+6. Return `{ answer, sources: reranked }`; throw `SearchError` on failures
+7. Write `__tests__/search/index.test.ts` with mocked sub-modules covering: full pipeline, empty results, LLM failures
+
