@@ -46,6 +46,17 @@
 
 ---
 
+## T-008: Configure Jest with ts-jest; set up @/ path alias
+
+**Steps:**
+1. Verify `jest.config.ts` has `preset: "ts-jest"` and `moduleNameMapper` for @/ alias
+2. Verify `tsconfig.json` has `"strict": true` and `"paths": { "@/*": ["./src/*"] }`
+3. Confirm all test files are discoverable via `testMatch` pattern
+4. Run `npm test` to verify all tests pass with proper module resolution
+5. Task is complete once all tests pass
+
+---
+
 ## T-005: Write src/lib/config.ts — Zod-parsed env variables
 
 **Steps:**

@@ -13,7 +13,7 @@
 - [x] **T-005** Write `src/lib/config.ts` — parse all env variables with Zod, export typed config object; throw on missing required variables at startup
 - [x] **T-006** Write `src/lib/logger.ts` — Winston logger; log level from `config.LOG_LEVEL`; JSON format in production, pretty in development
 - [x] **T-007** Write `src/lib/errors.ts` — `IngestionError`, `SearchError`, `EmbeddingError` custom classes extending `Error` with a `code` field
-- [ ] **T-008** Configure Jest with `ts-jest`; set up `@/` path alias in both `tsconfig.json` and `jest.config.ts`
+- [x] **T-008** Configure Jest with `ts-jest`; set up `@/` path alias in both `tsconfig.json` and `jest.config.ts`
 - [ ] **T-009** Write `.gitignore` (node_modules, .env, uploads/, .next/); configure ESLint and Prettier; add all scripts to `package.json`
 
 ---
