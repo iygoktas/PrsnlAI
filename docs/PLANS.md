@@ -177,3 +177,15 @@
 6. Return sourceId
 7. Write `__tests__/storage/index.test.ts` with mocked metadata/vector modules covering success, partial failures, and error recovery
 
+---
+
+## T-017: Write src/ingestion/text.ts
+
+**Steps:**
+1. Create type definition for IngestionResult (title, content, type)
+2. Implement `ingestText(input: string): IngestionResult` function
+3. Clean input: trim, remove extra whitespace, remove control characters
+4. Generate title from first line (first 50 chars) or default to "Untitled"
+5. Return `{ title, content: cleaned, type: 'TEXT' }`
+6. Write `__tests__/ingestion/text.test.ts` covering: plain text, markdown, whitespace, empty input, control characters
+
