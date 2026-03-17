@@ -32,7 +32,7 @@
   - Exponential backoff on rate limit errors (429)
   - Unit tests with mocked OpenAI client
 
-- [ ] **T-012** Write `src/embedding/local.ts`
+- [x] **T-012** Write `src/embedding/local.ts`
   - Calls Ollama `/api/embeddings` with `OLLAMA_EMBEDDING_MODEL` from config
   - Same interface as openai.ts
   - Unit tests with mocked `fetch`
