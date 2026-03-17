@@ -381,5 +381,17 @@
 6. Implement toast notification display: show success with sourceId/title/chunks count, or error with error message
 7. Write `__tests__/components/AddContentForm.test.tsx` covering: tab switching, form inputs, upload, success/error states, loading indicator, toast display
 
+---
+
+## T-034: Write `src/app/page.tsx`
+
+**Steps:**
+1. Create page component (client component with 'use client') that composes SearchBar and SearchResults
+2. Add state management: track query, isLoading, searchResults, error; use useState and useCallback
+3. Implement search handler: on SearchBar submit, fetch POST /api/search with query; handle loading and error states
+4. Display page title/heading and SearchBar at top (always visible)
+5. Display SearchResults below only when results are available; show error message if search fails
+6. Write `__tests__/app/page.test.tsx` covering: rendering, search submission, loading state, results display, error handling
+
 
 
