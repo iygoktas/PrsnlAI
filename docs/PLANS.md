@@ -310,3 +310,15 @@
 5. Return 200 with `{ sourceId, chunksCreated, title, processingTimeMs }`
 6. Write `__tests__/api/ingest.test.ts` with mocked ingest() covering: successful ingest, validation errors, parse errors, storage errors
 
+---
+
+## T-028: Write `src/app/api/search/route.ts`
+
+**Steps:**
+1. Create route handler for `POST /api/search`; define Zod schema (query: string, limit?: number, filter?: { type?: SourceType[], dateFrom?: ISO8601, dateTo?: ISO8601 })
+2. Parse and validate request body with Zod; return 400 if invalid
+3. Convert dateFrom/dateTo from ISO 8601 strings to Date objects; build SearchOptions
+4. Call `search(query, options)` from search/index; return 200 with `{ answer, sources }`
+5. Map SearchError code to HTTP status: return 422 for search failures, 500 for others
+6. Write `__tests__/api/search.test.ts` with mocked search() covering: successful search, validation errors, empty results, search failures
+

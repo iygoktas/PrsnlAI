@@ -143,7 +143,7 @@
 
 ## Phase 6 — API routes
 
-- [ ] **T-027** Write `src/app/api/ingest/route.ts`
+- [x] **T-027** Write `src/app/api/ingest/route.ts`
   - `POST /api/ingest`
   - Validate request with Zod (matches schema in ARCHITECTURE.md)
   - Call `ingest()` from ingestion index
