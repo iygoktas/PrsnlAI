@@ -97,3 +97,14 @@
 3. Write `__tests__/migrations/pgvector.test.ts` — verifies both migration files exist and contain the expected SQL keywords
 4. Run tests; commit
 
+---
+
+## T-010: Write src/embedding/chunker.ts
+
+**Steps:**
+1. Create `src/embedding/chunker.ts` with a function that splits text into chunks based on `MAX_CHUNK_SIZE` and `CHUNK_OVERLAP` from config
+2. Implement a simple token estimation (rough approximation: ~4 characters per token)
+3. Return array of `{ content: string; chunkIndex: number; tokenEstimate: number }` for each chunk
+4. Write `__tests__/embedding/chunker.test.ts` with tests for: short text, long text with overlap, empty string, single-word input
+5. Run tests; if passing, commit with type `feat(embedding)`
+
