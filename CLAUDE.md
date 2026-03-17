@@ -109,3 +109,9 @@ If `.env` doesn't exist, copy `.env.example` and fill in the values.
 ## Critical dependencies
 
 Before adding any package not listed in ARCHITECTURE.md, write a short ADR in docs/DECISIONS.md explaining why you chose it.
+
+## Model usage
+- Use claude-haiku-4-5-20251001 for: reading files, writing boilerplate,
+  updating TASKS.md, updating PLANS.md, running commands, writing tests
+- Use claude-sonnet-4-6 for: complex business logic, debugging hard errors,
+  architecture decisions, ingestion pipeline, vector search implementation

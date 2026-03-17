@@ -1,0 +1,51 @@
+{
+  "name": "personal-ai-kb",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@mozilla/readability": "latest",
+    "@prisma/client": "latest",
+    "autoprefixer": "^10.4.20",
+    "jsdom": "latest",
+    "next": "14.2.35",
+    "openai": "latest",
+    "pdf-parse": "latest",
+    "playwright": "latest",
+    "postcss": "^8.4.47",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.6.3",
+    "winston": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@mozilla/readability": "latest",
+    "@types/jest": "^29.5.14",
+    "@types/jsdom": "latest",
+    "@types/node": "^22.0.0",
+    "@types/pdf-parse": "latest",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.35",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
+    "prisma": "latest",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2"
+  }
+}
