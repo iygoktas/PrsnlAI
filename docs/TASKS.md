@@ -174,10 +174,10 @@
 
 ## Phase 8 — QA and documentation
 
-- [ ] **T-036** End-to-end test: add a URL → search for content from that URL → verify source appears in top 3
-- [ ] **T-037** End-to-end test: upload a PDF → ask a question about its content → verify correct page number in result
-- [ ] **T-038** Performance test: index 100 documents → measure search latency → must be under 500 ms
-- [ ] **T-039** Write `README.md`: prerequisites, setup steps (Supabase project, env vars, `npm run db:migrate`), first run, usage examples with screenshots
+- [x] **T-036** End-to-end test: add a URL → search for content from that URL → verify source appears in top 3
+- [x] **T-037** End-to-end test: upload a PDF → ask a question about its content → verify correct page number in result
+- [x] **T-038** Performance test: index 100 documents → measure search latency → must be under 500 ms
+- [x] **T-039** Write `README.md`: prerequisites, setup steps (Supabase project, env vars, `npm run db:migrate`), first run, usage examples with screenshots
 
 ---
 
