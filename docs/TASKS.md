@@ -72,7 +72,7 @@
 
 ## Phase 3 — Ingestion pipelines
 
-- [ ] **T-017** Write `src/ingestion/text.ts`
+- [x] **T-017** Write `src/ingestion/text.ts`
   - Accepts plain text or Markdown string
   - Cleans whitespace and control characters
   - Returns `{ title: string; content: string; type: 'TEXT' }`
