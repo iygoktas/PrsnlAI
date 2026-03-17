@@ -134,7 +134,7 @@
   - Keeps max 2 chunks per source (pick highest-scoring ones)
   - Sorts by score descending
 
-- [ ] **T-026** Write `src/search/index.ts`
+- [x] **T-026** Write `src/search/index.ts`
   - `search(query: string, options?: SearchOptions): Promise<SearchResponse>`
   - Calls semantic → rerank → generateAnswer
   - Returns `{ answer, sources }`

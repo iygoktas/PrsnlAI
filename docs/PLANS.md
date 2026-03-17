@@ -298,3 +298,15 @@
 6. Return `{ answer, sources: reranked }`; throw `SearchError` on failures
 7. Write `__tests__/search/index.test.ts` with mocked sub-modules covering: full pipeline, empty results, LLM failures
 
+---
+
+## T-027: Write `src/app/api/ingest/route.ts`
+
+**Steps:**
+1. Create route handler for `POST /api/ingest`; define Zod schema for request validation (type, content|file, title?)
+2. Parse request body; validate with Zod; return 400 if invalid
+3. Build `IngestionInput` object; call `ingest()` from ingestion index
+4. Map error codes to HTTP status: PARSE_ERROR/validation errors → 422, others → 500; return error JSON
+5. Return 200 with `{ sourceId, chunksCreated, title, processingTimeMs }`
+6. Write `__tests__/api/ingest.test.ts` with mocked ingest() covering: successful ingest, validation errors, parse errors, storage errors
+
