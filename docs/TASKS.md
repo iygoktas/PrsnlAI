@@ -52,7 +52,7 @@
   - `deleteSource(id: string): Promise<void>` — cascades to chunks via Prisma relation
   - Unit tests with mocked Prisma client
 
-- [ ] **T-015** Write `src/storage/vector.ts`
+- [x] **T-015** Write `src/storage/vector.ts`
   - `insertChunks(chunks: ChunkWithEmbedding[]): Promise<void>` — uses Prisma `$executeRaw` for the vector column
   - `similaritySearch(embedding: number[], topK: number, filter?: VectorFilter): Promise<ScoredChunk[]>`
     ```sql
