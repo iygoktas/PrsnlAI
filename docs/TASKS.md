@@ -151,7 +151,7 @@
   - Return correct HTTP status on each error type (400, 422, 500)
   - Integration tests
 
-- [ ] **T-028** Write `src/app/api/search/route.ts`
+- [x] **T-028** Write `src/app/api/search/route.ts`
   - `POST /api/search`
   - Validate request with Zod
   - Call `search()` from search index

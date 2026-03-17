@@ -322,3 +322,16 @@
 5. Map SearchError code to HTTP status: return 422 for search failures, 500 for others
 6. Write `__tests__/api/search.test.ts` with mocked search() covering: successful search, validation errors, empty results, search failures
 
+---
+
+## T-029: Write `src/app/layout.tsx`
+
+**Steps:**
+1. Create root layout component (RootLayout) that wraps all pages; export metadata with title, description, viewport
+2. Import Tailwind base styles (`globals.css`); set up font via next/font (e.g., Geist Sans for clean UI)
+3. Configure theme: dark mode via `dark:` Tailwind classes, sensible color palette
+4. Build HTML structure: `<html>`, `<body>` with Tailwind utilities (max-width container, padding, dark background)
+5. Render `{children}` slot for page-specific content; no tests needed for layout
+
+
+
