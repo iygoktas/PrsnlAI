@@ -6,7 +6,7 @@
 
 ## Phase 0 — Project setup
 
-- [ ] **T-001** Scaffold Next.js 14 project (TypeScript, App Router, Tailwind, ESLint)
+- [x] **T-001** Scaffold Next.js 14 project (TypeScript, App Router, Tailwind, ESLint)
 - [ ] **T-002** Install and configure Prisma; connect to Supabase via `DATABASE_URL` and `DIRECT_URL`; create `.env.example`
 - [ ] **T-003** Add pgvector migration: create a Prisma migration file that runs `CREATE EXTENSION IF NOT EXISTS vector` and the IVFFLAT index
 - [ ] **T-004** Write `Source` and `Chunk` models in `prisma/schema.prisma` exactly as defined in ARCHITECTURE.md; run `npm run db:migrate`
