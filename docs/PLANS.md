@@ -405,5 +405,38 @@
 5. Display page title/heading and AddContentForm component
 6. Write `__tests__/app/add/page.test.tsx` covering: rendering, form submission success/error, page title
 
+---
+
+## T-036: E2E — URL ingestion + search
+
+**Steps:**
+1. Skip all tests when DATABASE_URL or OPENAI_API_KEY (or ANTHROPIC_API_KEY) is absent
+2. Ingest https://example.com via `ingest({ type: 'url', url: '...' })`
+3. Search for a query about example.com content
+4. Assert the returned sourceId appears in the top 3 search result sources
+5. Clean up: delete the created source after the test
+
+---
+
+## T-037: E2E — PDF ingestion + search
+
+**Steps:**
+1. Skip all tests when required env vars are absent
+2. Build a minimal valid PDF buffer in-memory using a PDF-builder helper
+3. Ingest the PDF via `ingest({ type: 'pdf', file: buffer })`
+4. Search for content from the PDF
+5. Assert the source appears in results; note page-number tracking is not yet implemented end-to-end
+
+---
+
+## T-038: Performance — search latency under 500ms
+
+**Steps:**
+1. Skip when required env vars are absent
+2. Ingest 100 short text documents programmatically (parallel, batched)
+3. Measure wall-clock time for `search()` call
+4. Assert search latency < 500 ms
+5. Clean up all created sources after the test
+
 
 

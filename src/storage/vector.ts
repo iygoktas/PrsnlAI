@@ -54,13 +54,13 @@ export async function insertChunks(chunks: ChunkWithEmbedding[]): Promise<void> 
       )
       .join(',');
 
-    const sql = `
+    // Use template tag for $executeRaw (required by Prisma)
+    // Note: values are already properly escaped in the values array
+    await prisma.$executeRawUnsafe(`
       INSERT INTO "Chunk" (id, "sourceId", content, "chunkIndex", "pageNumber", embedding)
       VALUES ${values}
       ON CONFLICT (id) DO NOTHING
-    `;
-
-    await prisma.$executeRaw(sql as any);
+    `);
     logger.info(`Inserted ${chunks.length} chunks with embeddings`);
   } catch (error) {
     logger.error(`Failed to insert chunks: ${error}`);
