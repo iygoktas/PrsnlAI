@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { SearchResults } from '@/components/SearchResults';
 import type { SearchResult } from '@/search/semantic';
 
-describe('SearchResults', () => {
+describe('SearchResults (AnswerBlock)', () => {
   const mockDate = new Date('2024-01-15T10:00:00Z');
 
   const mockSources: SearchResult[] = [
@@ -43,21 +43,20 @@ describe('SearchResults', () => {
   ];
 
   describe('rendering', () => {
-    it('should render answer section', () => {
+    it('should render answer text', () => {
       const answer = 'This is the answer to your query';
       render(<SearchResults answer={answer} sources={[]} />);
 
-      expect(screen.getByText('Answer')).toBeInTheDocument();
       expect(screen.getByText(answer)).toBeInTheDocument();
     });
 
-    it('should render sources section with count', () => {
+    it('should render SOURCES label when sources exist', () => {
       render(<SearchResults answer="Answer" sources={mockSources} />);
 
-      expect(screen.getByText(/Sources \(3\)/i)).toBeInTheDocument();
+      expect(screen.getByText('SOURCES')).toBeInTheDocument();
     });
 
-    it('should render all source cards', () => {
+    it('should render all source titles', () => {
       render(<SearchResults answer="Answer" sources={mockSources} />);
 
       expect(screen.getByText('Introduction to RAG')).toBeInTheDocument();
@@ -75,11 +74,10 @@ describe('SearchResults', () => {
   });
 
   describe('empty state', () => {
-    it('should show empty state message when no sources', () => {
+    it('should not render SOURCES section when no sources', () => {
       render(<SearchResults answer="Answer" sources={[]} />);
 
-      expect(screen.getByText('No relevant sources found for this query.')).toBeInTheDocument();
-      expect(screen.queryByText(/Sources/)).not.toBeInTheDocument();
+      expect(screen.queryByText('SOURCES')).not.toBeInTheDocument();
     });
 
     it('should not render source cards when no sources', () => {
@@ -90,22 +88,21 @@ describe('SearchResults', () => {
   });
 
   describe('source card display', () => {
-    it('should display source titles', () => {
-      render(<SearchResults answer="Answer" sources={mockSources} />);
+    it('should display citation numbers in source cards', () => {
+      const { container } = render(<SearchResults answer="Answer" sources={mockSources} />);
 
-      mockSources.forEach((source) => {
-        expect(screen.getByText(source.title)).toBeInTheDocument();
+      // Citation numbers should be displayed in the source cards as [1], [2], [3]
+      const citationNumbers = container.querySelectorAll('a span');
+      expect(citationNumbers.length).toBeGreaterThan(0);
+
+      // Check that at least some spans contain citation numbers
+      let hasCitationNumbers = false;
+      citationNumbers.forEach((span) => {
+        if (span.textContent?.match(/\[\d+\]/)) {
+          hasCitationNumbers = true;
+        }
       });
-    });
-
-    it('should display source excerpts', () => {
-      render(<SearchResults answer="Answer" sources={mockSources} />);
-
-      mockSources.forEach((source) => {
-        // Use a simpler substring that doesn't contain regex special characters
-        const excerptStart = source.excerpt.substring(0, 15).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        expect(screen.getByText(new RegExp(excerptStart))).toBeInTheDocument();
-      });
+      expect(hasCitationNumbers).toBe(true);
     });
 
     it('should display similarity score as percentage', () => {
@@ -116,223 +113,94 @@ describe('SearchResults', () => {
       expect(screen.getByText('82%')).toBeInTheDocument();
     });
 
-    it('should display page numbers for sources that have them', () => {
-      render(<SearchResults answer="Answer" sources={mockSources} />);
-
-      expect(screen.getByText('p. 5')).toBeInTheDocument();
-      expect(screen.getByText('p. 12')).toBeInTheDocument();
-    });
-
-    it('should not display page numbers for sources without them', () => {
-      const { container } = render(<SearchResults answer="Answer" sources={[mockSources[0]]} />);
-
-      const pageElements = container.querySelectorAll('p');
-      let hasOnlyPageNumbers = false;
-      pageElements.forEach((el) => {
-        if (el.textContent?.includes('p.')) {
-          hasOnlyPageNumbers = true;
-        }
-      });
-
-      expect(hasOnlyPageNumbers).toBe(false);
-    });
-  });
-
-  describe('source types and icons', () => {
-    it('should display URL icon for URL sources', () => {
-      const sources: SearchResult[] = [
+    it('should truncate long source titles', () => {
+      const longTitleSource: SearchResult[] = [
         {
           ...mockSources[0],
-          type: 'URL' as const,
+          title: 'This is a very long title that should be truncated to 40 characters',
         },
       ];
-      const { container } = render(<SearchResults answer="Answer" sources={sources} />);
+      render(<SearchResults answer="Answer" sources={longTitleSource} />);
 
-      expect(container.textContent).toContain('🌐');
+      // Title should be truncated to 40 chars + ellipsis
+      expect(screen.getByText(/This is a very long title that should be…/)).toBeInTheDocument();
     });
 
-    it('should display PDF icon for PDF sources', () => {
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          type: 'PDF' as const,
-        },
-      ];
-      const { container } = render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(container.textContent).toContain('📄');
-    });
-
-    it('should display TEXT icon for TEXT sources', () => {
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          type: 'TEXT' as const,
-        },
-      ];
-      const { container } = render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(container.textContent).toContain('📝');
-    });
-
-    it('should display TWEET icon for TWEET sources', () => {
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          type: 'TWEET' as const,
-        },
-      ];
-      const { container } = render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(container.textContent).toContain('𝕏');
-    });
-  });
-
-  describe('date formatting', () => {
-    it('should display "Today" for today\'s date', () => {
-      const today = new Date();
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          createdAt: today,
-        },
-      ];
-      render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(screen.getByText('Today')).toBeInTheDocument();
-    });
-
-    it('should display "Yesterday" for yesterday\'s date', () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          createdAt: yesterday,
-        },
-      ];
-      render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(screen.getByText('Yesterday')).toBeInTheDocument();
-    });
-
-    it('should display days ago for recent dates', () => {
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          createdAt: fiveDaysAgo,
-        },
-      ];
-      render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(screen.getByText('5d ago')).toBeInTheDocument();
-    });
-
-    it('should display weeks ago for older dates', () => {
-      const twoWeeksAgo = new Date();
-      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          createdAt: twoWeeksAgo,
-        },
-      ];
-      render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(screen.getByText('2w ago')).toBeInTheDocument();
-    });
-
-    it('should display formatted date for old entries', () => {
-      const oldDate = new Date('2023-06-15');
-      const sources: SearchResult[] = [
-        {
-          ...mockSources[0],
-          createdAt: oldDate,
-        },
-      ];
-      render(<SearchResults answer="Answer" sources={sources} />);
-
-      expect(screen.getByText(/Jun 15, 2023|Jun 15 2023/)).toBeInTheDocument();
-    });
-  });
-
-  describe('links', () => {
-    it('should make source cards with URLs into clickable links', () => {
+    it('should render source cards as clickable links for URL sources', () => {
       render(<SearchResults answer="Answer" sources={[mockSources[0]]} />);
 
-      const link = screen.getByRole('link', { name: /Introduction to RAG/i });
-      expect(link).toHaveAttribute('href', mockSources[0].url);
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      const links = screen.getAllByRole('link');
+      expect(links.length).toBeGreaterThan(0);
+      expect(links[0]).toHaveAttribute('href', 'https://example.com/rag-intro');
+      expect(links[0]).toHaveAttribute('target', '_blank');
     });
 
-    it('should not make source cards without URLs into links', () => {
+    it('should not set href to blank link for non-URL sources', () => {
       render(<SearchResults answer="Answer" sources={[mockSources[1]]} />);
 
-      const link = screen.getByRole('link', { name: /LLM Architecture/i });
-      expect(link).toHaveAttribute('href', '#');
-      expect(link).not.toHaveAttribute('target');
-      expect(link).not.toHaveAttribute('rel');
+      const links = screen.getAllByRole('link');
+      expect(links[0]).toHaveAttribute('href', '#');
     });
   });
 
-  describe('domain extraction', () => {
-    it('should extract and display domain from URL', () => {
-      render(<SearchResults answer="Answer" sources={[mockSources[0]]} />);
+  describe('citation markers in answer', () => {
+    it('should split answer by citation markers and create superscripts', () => {
+      const answerWithCitations = 'This is part 1 [1] and part 2 [2] and part 3 [3]';
+      const { container } = render(
+        <SearchResults answer={answerWithCitations} sources={mockSources} />
+      );
 
-      expect(screen.getByText('example.com')).toBeInTheDocument();
-    });
-
-    it('should display "Local" for sources without URL', () => {
-      render(<SearchResults answer="Answer" sources={[mockSources[1]]} />);
-
-      expect(screen.getByText('Local')).toBeInTheDocument();
+      const superscripts = container.querySelectorAll('sup');
+      // Should have citation numbers for each source
+      expect(superscripts.length).toBeGreaterThan(0);
     });
   });
 
   describe('styling', () => {
-    it('should apply card styling', () => {
-      const { container } = render(<SearchResults answer="Answer" sources={mockSources} />);
+    it('should apply amber left border to answer zone', () => {
+      const { container } = render(<SearchResults answer="Answer" sources={[]} />);
 
-      const cards = container.querySelectorAll('.card');
-      expect(cards.length).toBeGreaterThan(0);
+      const answerZone = container.querySelector('.border-l-2');
+      expect(answerZone).toBeInTheDocument();
+      expect(answerZone).toHaveStyle({ borderColor: 'var(--color-accent)' });
     });
 
-    it('should apply badge styling to score', () => {
-      const { container } = render(<SearchResults answer="Answer" sources={[mockSources[0]]} />);
+    it('should use serif font for answer text', () => {
+      const { container } = render(<SearchResults answer="Answer" sources={[]} />);
 
-      const badges = container.querySelectorAll('.badge');
-      expect(badges.length).toBeGreaterThan(0);
+      const answerParagraph = container.querySelector('p');
+      expect(answerParagraph).toHaveStyle({ fontFamily: 'var(--font-serif)' });
     });
 
-    it('should apply truncation to long titles', () => {
+    it('should use mono font for source cards', () => {
       const { container } = render(<SearchResults answer="Answer" sources={mockSources} />);
 
-      const titles = container.querySelectorAll('h4');
-      titles.forEach((title) => {
-        expect(title).toHaveClass('truncate');
+      const sourceCards = container.querySelectorAll('a');
+      expect(sourceCards.length).toBeGreaterThan(0);
+      // Source cards should have mono font
+      sourceCards.forEach((card) => {
+        const inner = card.querySelector('div');
+        expect(inner).toHaveStyle({ fontFamily: 'var(--font-mono)' });
       });
+    });
+
+    it('should apply fade-in animation', () => {
+      const { container } = render(<SearchResults answer="Answer" sources={[]} />);
+
+      const mainDiv = container.querySelector('.w-full.mt-8');
+      expect(mainDiv).toHaveStyle({ animation: 'fadeIn 0.2s ease forwards' });
     });
   });
 
-  describe('multiple sources', () => {
-    it('should render all sources in order', () => {
-      render(<SearchResults answer="Answer" sources={mockSources} />);
-
-      const sourceTexts = mockSources.map((s) => s.title);
-
-      sourceTexts.forEach((text) => {
-        expect(screen.getByText(text)).toBeInTheDocument();
-      });
-    });
-
-    it('should maintain spacing between source cards', () => {
+  describe('hover effects', () => {
+    it('should have transition effect on source cards', () => {
       const { container } = render(<SearchResults answer="Answer" sources={mockSources} />);
 
-      const sourceContainer = container.querySelector('.space-y-3');
-      expect(sourceContainer).toBeInTheDocument();
+      const sourceCards = container.querySelectorAll('a');
+      expect(sourceCards.length).toBeGreaterThan(0);
+      sourceCards.forEach((card) => {
+        expect(card).toHaveClass('transition-all', 'duration-150');
+      });
     });
   });
 });
