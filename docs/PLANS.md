@@ -273,3 +273,15 @@
 5. For each ScoredChunk result, call `getSource()` and merge title, url, type onto result to build SearchResult
 6. Write `__tests__/search/semantic.test.ts` with mocked embed/similaritySearch/getSource covering: basic search, filters, no results, errors
 
+---
+
+## T-025: Write `src/search/rerank.ts`
+
+**Steps:**
+1. Import `SearchResult` from semantic.ts; read `SIMILARITY_THRESHOLD` from config
+2. Implement `rerank(results: SearchResult[]): SearchResult[]` function
+3. Filter: drop any result with score < SIMILARITY_THRESHOLD
+4. Deduplicate: group by sourceId, keep max 2 chunks per source (highest scoring), flatten back to array
+5. Sort: by score descending, so top results appear first
+6. Write `__tests__/search/rerank.test.ts` with tests covering: threshold filtering, per-source deduplication, sorting, edge cases
+

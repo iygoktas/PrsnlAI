@@ -122,7 +122,7 @@
 
 ## Phase 5 — Search layer
 
-- [ ] **T-024** Write `src/search/semantic.ts`
+- [x] **T-024** Write `src/search/semantic.ts`
   - Embeds the query string
   - Calls `similaritySearch` with topK from config
   - Joins source metadata onto results
