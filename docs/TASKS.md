@@ -114,7 +114,7 @@
   - Same interface as anthropic.ts
   - Unit tests with mocked `fetch`
 
-- [ ] **T-023** Write `src/llm/index.ts`
+- [x] **T-023** Write `src/llm/index.ts`
   - Reads `LLM_PROVIDER` from config
   - Exports `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
 

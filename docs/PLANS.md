@@ -261,3 +261,15 @@
 4. Router function: if provider is `'anthropic'` call `generateAnswer()`, else if `'local'` call `generateAnswerLocal()`, else throw `SearchError`
 5. Write `__tests__/llm/index.test.ts` with mocked sub-modules covering: anthropic provider, local provider, invalid provider
 
+---
+
+## T-024: Write `src/search/semantic.ts`
+
+**Steps:**
+1. Define `SearchResult` type: sourceId, title, url?, excerpt (chunk content), score, chunkIndex, pageNumber?
+2. Define `SemanticSearchOptions`: filter by source type/date (optional), topK (default from config)
+3. Implement `semanticSearch(query: string, options?: SemanticSearchOptions): Promise<SearchResult[]>`
+4. Call `embed([query])` to get embedding, then `similaritySearch()` from storage/vector with embedding + topK + filter
+5. For each ScoredChunk result, call `getSource()` and merge title, url, type onto result to build SearchResult
+6. Write `__tests__/search/semantic.test.ts` with mocked embed/similaritySearch/getSource covering: basic search, filters, no results, errors
+
