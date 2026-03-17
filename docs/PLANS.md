@@ -344,5 +344,16 @@
 4. Add loading spinner (simple CSS spinner or text indicator) that displays when loading is true
 5. Write `__tests__/components/SearchBar.test.tsx` with tests covering: render, input changes, submit on Enter, submit on button click, loading state display
 
+---
+
+## T-031: Write `SearchResults.tsx`
+
+**Steps:**
+1. Create `src/components/SearchResults.tsx` as a client component
+2. Define `SearchResultsProps` type: `answer: string; sources: SearchResult[]` (import SearchResult from @/search/semantic)
+3. Render answer text in a prominent block with Tailwind styling (border, padding, readable font size)
+4. Render each source as a card below with source metadata: title, URL (if present), source type icon, date, similarity score
+5. Write `__tests__/components/SearchResults.test.tsx` covering: render, empty results, multiple sources, proper formatting
+
 
 
