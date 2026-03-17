@@ -78,7 +78,7 @@
   - Returns `{ title: string; content: string; type: 'TEXT' }`
   - Unit tests
 
-- [ ] **T-018** Write `src/ingestion/pdf.ts`
+- [x] **T-018** Write `src/ingestion/pdf.ts`
   - Accepts a `Buffer` (file upload)
   - Uses `pdf-parse` to extract text
   - Preserves page number per chunk (split by page break, then chunk within page)
