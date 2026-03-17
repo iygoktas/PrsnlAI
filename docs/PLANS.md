@@ -250,3 +250,14 @@
 5. Extract response text from JSON; throw `SearchError` on errors (connection, parsing, invalid response)
 6. Write `__tests__/llm/local.test.ts` with mocked `fetch` covering: successful generation, connection error, invalid response
 
+---
+
+## T-023: Write `src/llm/index.ts`
+
+**Steps:**
+1. Create `src/llm/index.ts` exporting `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
+2. Read `LLM_PROVIDER` from config (`'anthropic'` | `'local'`)
+3. Import both `generateAnswer` from anthropic.ts and `generateAnswerLocal` from local.ts
+4. Router function: if provider is `'anthropic'` call `generateAnswer()`, else if `'local'` call `generateAnswerLocal()`, else throw `SearchError`
+5. Write `__tests__/llm/index.test.ts` with mocked sub-modules covering: anthropic provider, local provider, invalid provider
+

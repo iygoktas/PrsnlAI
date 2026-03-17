@@ -109,7 +109,7 @@
   - Model: `claude-haiku-4-5-20251001` (from config)
   - Unit tests with mocked Anthropic client
 
-- [ ] **T-022** Write `src/llm/local.ts`
+- [x] **T-022** Write `src/llm/local.ts`
   - Calls Ollama `/api/chat` with `OLLAMA_LLM_MODEL` from config
   - Same interface as anthropic.ts
   - Unit tests with mocked `fetch`
