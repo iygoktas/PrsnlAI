@@ -11,3 +11,14 @@
 4. Remove the default boilerplate from `src/app/page.tsx` and `src/app/globals.css`
 5. Create the folder structure from ARCHITECTURE.md (`src/ingestion`, `src/embedding`, `src/storage`, `src/search`, `src/llm`, `src/lib`, `src/types`, `src/components`, `__tests__/`)
 
+---
+
+## T-002: Install and configure Prisma; connect to Supabase; create `.env.example`
+
+**Steps:**
+1. Prisma is already in `devDependencies`; run `npx prisma init` to generate `prisma/schema.prisma` (overwrite with correct datasource block)
+2. Write `prisma/schema.prisma` with datasource referencing `DATABASE_URL` / `DIRECT_URL` and generator block (no models yet — T-004)
+3. Create `src/lib/prisma.ts` — singleton Prisma client for use across the app
+4. Write `.env.example` with all required variables documented (DATABASE_URL, DIRECT_URL, plus placeholders for upcoming tasks)
+5. Write a test that verifies the schema file has the correct datasource provider and both URL env vars
+

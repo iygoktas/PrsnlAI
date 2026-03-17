@@ -117,6 +117,25 @@
 
 ---
 
+## ADR-007 — Prisma 5.x over Prisma 7.x
+
+**Date:** 2026-03-17
+**Status:** Accepted
+
+**Context:** `prisma: latest` resolved to v7.5.0 which removed `url` / `directUrl` from `schema.prisma` in favour of a separate `prisma.config.ts`. The ARCHITECTURE.md schema was written for Prisma 5's conventions.
+
+**Decision:** Pin `prisma` and `@prisma/client` to `^5.22.0`.
+
+**Rationale:**
+- ARCHITECTURE.md explicitly shows `url = env("DATABASE_URL")` and `directUrl = env("DIRECT_URL")` in the datasource block — the v5 pattern
+- Prisma 5 is still actively maintained (LTS)
+- Migrating to the Prisma 7 config file pattern adds complexity with no current benefit
+- Can upgrade to v6/v7 later once the schema design is stable
+
+**Trade-off:** Will not benefit from Prisma 7 features. Upgrade is straightforward when needed.
+
+---
+
 ## Template (copy for new decisions)
 
 ```

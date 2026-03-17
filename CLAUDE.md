@@ -25,7 +25,7 @@
 - Modify an existing migration file
 - `git push --force`
 - Permanently delete a file (always commit first)
-
+- git add -A && git commit -m "<type>: <description>" && git push after "good to log" improvements.
 ---
 
 ## Work loop
@@ -115,3 +115,8 @@ Before adding any package not listed in ARCHITECTURE.md, write a short ADR in do
   updating TASKS.md, updating PLANS.md, running commands, writing tests
 - Use claude-sonnet-4-6 for: complex business logic, debugging hard errors,
   architecture decisions, ingestion pipeline, vector search implementation
+
+## Auto-continue
+After completing each task, automatically run /ship for the next task.
+Only stop if you hit an error you cannot fix after 2 attempts,
+or if a task requires external setup (API keys, Supabase config, etc.).
