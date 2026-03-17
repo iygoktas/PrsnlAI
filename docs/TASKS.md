@@ -85,7 +85,7 @@
   - Logs and throws `IngestionError` for scanned-only or corrupt PDFs
   - Unit tests with a real small PDF fixture
 
-- [ ] **T-019** Write `src/ingestion/url.ts`
+- [x] **T-019** Write `src/ingestion/url.ts`
   - Launches Playwright in headless mode
   - Navigates to URL; timeout: 15 seconds
   - Runs `@mozilla/readability` on the DOM to extract article content
