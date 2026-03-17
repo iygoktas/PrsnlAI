@@ -238,3 +238,15 @@
 5. Call `client.messages.create()` with model from config (`ANTHROPIC_MODEL`), throw `SearchError` on API failures
 6. Write `__tests__/llm/anthropic.test.ts` with mocked Anthropic client covering: successful answer generation, API errors, no sources
 
+---
+
+## T-022: Write `src/llm/local.ts`
+
+**Steps:**
+1. Create `src/llm/local.ts` exporting `generateAnswerLocal(query: string, sources: ScoredChunk[]): Promise<string>`
+2. Build same prompt format as anthropic.ts (sources with [1], [2], etc. citations)
+3. Call Ollama `/api/chat` endpoint (base URL from `OLLAMA_BASE_URL` config) with model from `OLLAMA_LLM_MODEL`
+4. Send request body: `{ model, messages: [{ role: 'user', content: prompt }], stream: false }`
+5. Extract response text from JSON; throw `SearchError` on errors (connection, parsing, invalid response)
+6. Write `__tests__/llm/local.test.ts` with mocked `fetch` covering: successful generation, connection error, invalid response
+

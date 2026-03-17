@@ -102,7 +102,7 @@
 
 ## Phase 4 — LLM layer
 
-- [ ] **T-021** Write `src/llm/anthropic.ts`
+- [x] **T-021** Write `src/llm/anthropic.ts`
   - Uses `@anthropic-ai/sdk`
   - `generateAnswer(query: string, sources: ScoredChunk[]): Promise<string>`
   - Uses prompt template from ARCHITECTURE.md
