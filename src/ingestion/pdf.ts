@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse';
+import { extractText, getDocumentProxy } from 'unpdf';
 import { IngestionError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 
@@ -28,28 +28,29 @@ export async function ingestPdf(
     throw new IngestionError('PDF buffer is empty', 'EMPTY_BUFFER');
   }
 
-  let pdf;
+  let pageCount: number;
+  let extractedText: string;
+
   try {
-    // Parse PDF and extract text
-    pdf = await pdfParse(buffer);
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    pageCount = pdf.numPages;
+    const { text } = await extractText(pdf, { mergePages: true });
+    extractedText = Array.isArray(text) ? text.join('\n') : text;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error(`Failed to parse PDF: ${message}`);
     throw new IngestionError(`Failed to parse PDF: ${message}`, 'CORRUPT_PDF');
   }
 
-  // Check if PDF has content
-  if (!pdf || !pdf.text) {
+  if (!extractedText || !extractedText.trim()) {
     throw new IngestionError('PDF has no extractable text', 'NO_TEXT');
   }
 
-  const extractedText = pdf.text.trim();
-  const pageCount = pdf.numpages || 1;
+  extractedText = extractedText.trim();
 
-  // Detect scanned PDFs: if very little text was extracted relative to page count
-  const expectedMinChars = pageCount * 50; // Rough estimate: 50 chars per page minimum
+  // Detect scanned PDFs: less than 5% of expected minimum chars
+  const expectedMinChars = pageCount * 50;
   if (extractedText.length < expectedMinChars * 0.05) {
-    // Less than 5% of expected text
     logger.warn(`PDF appears to be scanned (${extractedText.length} chars extracted)`);
     throw new IngestionError(
       'PDF appears to be scanned or contains mostly images. OCR not supported.',
@@ -57,12 +58,9 @@ export async function ingestPdf(
     );
   }
 
-  // Extract title from metadata or filename
+  // Extract title from filename
   let title = 'Untitled PDF';
-  if (pdf.info?.Title && typeof pdf.info.Title === 'string' && pdf.info.Title.length > 0) {
-    title = pdf.info.Title.substring(0, 50);
-  } else if (filename) {
-    // Extract filename without extension
+  if (filename) {
     title = filename.replace(/\.[^.]+$/, '').substring(0, 50);
   }
 
