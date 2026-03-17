@@ -2,9 +2,12 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import path from 'path';
+import fs from 'fs/promises';
 import { ingest } from '@/ingestion/index';
 import { IngestionError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
+import prisma from '@/lib/prisma';
 
 /**
  * Zod schema for validating ingest API requests.
@@ -134,6 +137,24 @@ export async function POST(request: NextRequest) {
     logger.info(
       `Ingestion successful: sourceId=${result.sourceId}, chunks=${result.chunksCreated}`,
     );
+
+    // Persist the original PDF file so it can be served later for preview
+    if (validatedData.type === 'pdf' && fileBuffer) {
+      try {
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        await fs.mkdir(uploadsDir, { recursive: true });
+        const filePath = path.join(uploadsDir, `${result.sourceId}.pdf`);
+        await fs.writeFile(filePath, fileBuffer);
+        await prisma.source.update({
+          where: { id: result.sourceId },
+          data: { filePath },
+        });
+        logger.info(`Saved PDF to ${filePath}`);
+      } catch (err) {
+        // Non-fatal: ingestion succeeded, file preview just won't be available
+        logger.warn(`Failed to persist PDF file: ${err}`);
+      }
+    }
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
