@@ -13,9 +13,6 @@ interface SearchResponse {
   sources: SearchResult[];
 }
 
-/**
- * Home page — two-panel layout with Sidebar and search/answer area
- */
 export default function Home() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,35 +28,29 @@ export default function Home() {
       const data = await res.json();
       setSources(Array.isArray(data) ? data : []);
     } catch {
-      // silently ignore — sidebar shows empty state
+      // silently ignore
     }
   }, []);
 
-  useEffect(() => {
-    fetchSources();
-  }, [fetchSources]);
+  useEffect(() => { fetchSources(); }, [fetchSources]);
 
   const handleSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) return;
-
     setQuery(searchQuery);
     setIsLoading(true);
     setError(null);
     setSearchResults(null);
-
     try {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: searchQuery }),
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `Error ${response.status}`);
       setSearchResults(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred during search';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'An error occurred during search');
     } finally {
       setIsLoading(false);
     }
@@ -70,70 +61,82 @@ export default function Home() {
     fetchSources();
   }, [fetchSources]);
 
+  const hasContent = !!(searchResults || error || (isLoading && query));
+
   return (
     <div style={{ backgroundColor: 'var(--bg-base)', minHeight: '100vh' }}>
-      {/* Left panel: fixed sidebar */}
-      <Sidebar sources={sources} onAddClick={() => setShowAddModal(true)} />
+      <Sidebar
+        sources={sources}
+        onAddClick={() => setShowAddModal(true)}
+        onSourcesChange={fetchSources}
+      />
 
-      {/* Right panel: offset by sidebar width */}
+      {/* Right panel — flex column, search pinned to bottom */}
       <main
         style={{
           marginLeft: '320px',
           minHeight: '100vh',
           backgroundColor: 'var(--bg-base)',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <div
-          style={{
-            maxWidth: '672px', // max-w-2xl
-            margin: '0 auto',
-            padding: '64px 32px 80px',
-          }}
-        >
-          <SearchBar query={query} loading={isLoading} onSubmit={handleSearch} />
-
+        {/* Scrollable results area */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: hasContent ? '48px 40px 24px' : '0' }}>
           {/* Error */}
           {error && (
-            <div
-              style={{
-                marginTop: '24px',
-                padding: '14px 16px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--bg-surface)',
-              }}
-            >
-              <p style={{ fontSize: '14px', color: 'var(--error)' }}>
-                {error}
-              </p>
+            <div style={{ maxWidth: '900px', margin: '0 auto', padding: '14px 16px', borderRadius: '8px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-surface)' }}>
+              <p style={{ fontSize: '14px', color: 'var(--error)' }}>{error}</p>
             </div>
           )}
 
           {/* Results */}
           {searchResults && (
-            <SearchResults
-              answer={searchResults.answer}
-              sources={searchResults.sources}
-            />
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+              <SearchResults answer={searchResults.answer} sources={searchResults.sources} />
+            </div>
           )}
 
-          {/* Empty state */}
-          {!isLoading && !searchResults && !error && !query && (
-            <p
-              style={{
-                marginTop: '48px',
-                textAlign: 'center',
-                fontSize: '14px',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Start searching your knowledge base
-            </p>
+          {/* Loading state */}
+          {isLoading && !searchResults && (
+            <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid var(--accent-dim)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite' }} />
+              <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Searching…</span>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+        </div>
+
+        {/* Search bar — sticky at bottom */}
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            backgroundColor: 'var(--bg-base)',
+            borderTop: hasContent ? '1px solid var(--border)' : 'none',
+            padding: hasContent ? '16px 40px 24px' : '0 40px',
+            // When no content yet, vertically center by using flex trick on the parent
+          }}
+        >
+          {/* Vertical centering spacer when empty */}
+          {!hasContent && (
+            <div style={{ height: 'calc(50vh - 80px)' }} />
+          )}
+          <div style={{ maxWidth: '672px', margin: '0 auto' }}>
+            {/* Query label */}
+            {query && (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {query}
+              </p>
+            )}
+            <SearchBar query={query} loading={isLoading} onSubmit={handleSearch} />
+          </div>
+          {!hasContent && (
+            <div style={{ height: 'calc(50vh - 80px)' }} />
           )}
         </div>
       </main>
 
-      {/* Add modal */}
       {showAddModal && (
         <AddContentForm
           onClose={() => setShowAddModal(false)}

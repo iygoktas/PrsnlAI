@@ -68,7 +68,12 @@ export async function POST(request: NextRequest) {
         const content = formData.get('content')?.toString();
         const title = formData.get('title')?.toString();
 
-        body = { type, content, title };
+        // Use original filename (stripped of extension) if no explicit title
+        const inferredTitle = title || (pdfFile.name
+          ? pdfFile.name.replace(/\.[^.]+$/, '')
+          : undefined);
+
+        body = { type, content, title: inferredTitle };
       } catch (error) {
         logger.warn(`FormData parsing error: ${error}`);
         return NextResponse.json(
