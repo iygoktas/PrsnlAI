@@ -214,3 +214,15 @@
 5. Validate URL and extracted content (>50 chars); close browser; return result
 6. Write `__tests__/ingestion/url.test.ts` with mocked Playwright covering: valid page, timeout, network error, no content
 
+---
+
+## T-020: Write src/ingestion/index.ts
+
+**Steps:**
+1. Create IngestionInput type (type: 'url'|'pdf'|'text', content|url|buffer, optional: title, file)
+2. Create IngestionResult type (sourceId, chunksCreated, title, processingTimeMs)
+3. Implement `ingest(input: IngestionInput): Promise<IngestionResult>` orchestrator
+4. Route to ingestUrl/ingestPdf/ingestText based on input.type; merge results with metadata
+5. Call chunker → embed → saveDocument pipeline; handle errors with cleanup
+6. Write `__tests__/ingestion/index.test.ts` with mocked sub-modules covering: URL/PDF/text routing, full pipeline, error handling
+
