@@ -28,7 +28,7 @@ model Chunk {
   content    String
   chunkIndex Int
   pageNumber Int?
-  embedding  Unsupported("vector(1536)")?
+  embedding  Unsupported("vector(768)")?
   createdAt  DateTime                    @default(now())
 }
 
