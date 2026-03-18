@@ -11,7 +11,31 @@ jest.mock('@/search/index', () => ({
   search: jest.fn(),
 }));
 
+jest.mock('@/search/filter', () => ({
+  getFilteredSourceIds: jest.fn().mockResolvedValue(new Set()),
+  filterSearchResults: jest.fn((results: unknown[]) => results),
+  summariseFilters: jest.fn().mockReturnValue({}),
+}));
+
+jest.mock('@/permissions/access', () => ({
+  getAccessibleSources: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('@/storage/audit', () => ({
+  logAudit: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: { user: { findUnique: jest.fn() } },
+}));
+
+jest.mock('@/lib/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
+}));
+
 import { search } from '@/search/index';
+import { getFilteredSourceIds, summariseFilters } from '@/search/filter';
 
 // Helper to create NextRequest
 function createRequest(body: unknown) {

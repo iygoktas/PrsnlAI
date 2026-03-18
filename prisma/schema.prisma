@@ -10,15 +10,86 @@ datasource db {
   directUrl = env("DIRECT_URL") // required by Supabase for migrations
 }
 
+model Organization {
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  users        User[]
+  folders      Folder[]
+  reports      Report[]
+  customFields CustomField[]
+}
+
+model CustomField {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id])
+  name       String
+  fieldType  FieldType
+  isRequired Boolean      @default(false)
+  options    Json?        // string[] — only used when fieldType = SELECT
+  createdAt  DateTime     @default(now())
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+model Report {
+  id                String       @id @default(cuid())
+  name              String
+  orgId             String
+  org               Organization @relation(fields: [orgId], references: [id])
+  createdBy         String
+  selectedSourceIds Json         // string[]
+  filters           Json?
+  generatedAt       DateTime?
+  createdAt         DateTime     @default(now())
+
+  @@index([orgId])
+}
+
+model User {
+  id      String   @id @default(cuid())
+  email   String   @unique
+  role    UserRole
+  orgId   String
+  org     Organization @relation(fields: [orgId], references: [id])
+  folders Folder[]
+
+  @@index([orgId])
+}
+
+model Folder {
+  id        String       @id @default(cuid())
+  name      String
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id])
+  parentId  String?
+  parent    Folder?      @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[]     @relation("FolderHierarchy")
+  isPublic  Boolean      @default(false)
+  createdBy String
+  creator   User         @relation(fields: [createdBy], references: [id])
+  sources   Source[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([orgId])
+  @@index([parentId])
+}
+
 model Source {
-  id        String     @id @default(cuid())
-  type      SourceType
-  title     String
-  url       String?
-  filePath  String?
-  content   String     // raw text for full-text fallback
-  createdAt DateTime   @default(now())
-  chunks    Chunk[]
+  id             String     @id @default(cuid())
+  type           SourceType
+  title          String
+  url            String?
+  filePath       String?
+  content        String     // raw text for full-text fallback
+  folderId       String?
+  folder         Folder?    @relation(fields: [folderId], references: [id])
+  customMetadata Json?      // values keyed by CustomField.name
+  createdAt      DateTime   @default(now())
+  chunks         Chunk[]
 }
 
 model Chunk {
@@ -32,9 +103,38 @@ model Chunk {
   createdAt  DateTime                    @default(now())
 }
 
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  orgId        String
+  action       String
+  resourceId   String?
+  resourceType String?
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([resourceId])
+}
+
+enum FieldType {
+  TEXT
+  DATE
+  SELECT
+}
+
 enum SourceType {
   URL
   PDF
   TEXT
   TWEET
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  VIEWER
 }

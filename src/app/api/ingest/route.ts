@@ -5,27 +5,39 @@ import { z } from 'zod';
 import path from 'path';
 import fs from 'fs/promises';
 import { ingest } from '@/ingestion/index';
-import { IngestionError } from '@/lib/errors';
+import { IngestionError, AuthError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import prisma from '@/lib/prisma';
+import { parseUserFromRequest, validateRole } from '@/middleware/auth';
+import { logAudit } from '@/storage/audit';
+import { listCustomFields, validateMetadata } from '@/storage/customFields';
+import { updateSourceMetadata } from '@/storage/metadata';
 
 /**
  * Zod schema for validating ingest API requests.
  */
+const customMetadataSchema = z.record(z.union([z.string(), z.number(), z.boolean()])).optional();
+
 const ingestRequestSchema = z.union([
   z.object({
     type: z.literal('text'),
     content: z.string().min(1, 'Content is required for text ingestion'),
     title: z.string().optional(),
+    folderId: z.string().optional(),
+    customMetadata: customMetadataSchema,
   }),
   z.object({
     type: z.literal('url'),
     content: z.string().url('Must be a valid URL'),
     title: z.string().optional(),
+    folderId: z.string().optional(),
+    customMetadata: customMetadataSchema,
   }),
   z.object({
     type: z.literal('pdf'),
     title: z.string().optional(),
+    folderId: z.string().optional(),
+    customMetadata: customMetadataSchema,
   }),
 ]);
 
@@ -35,14 +47,47 @@ type IngestRequest = z.infer<typeof ingestRequestSchema>;
  * POST /api/ingest
  *
  * Ingests a document (text, URL, or PDF) into the knowledge base.
- * Validates input, calls the ingestion pipeline, and returns processing results.
+ * If the x-user-id header is present, the user must have ADMIN or MANAGER role.
+ * Accepts an optional folderId to assign the resulting source to a folder.
+ * All ingestion actions are recorded in the audit log when auth is present.
  *
  * @param request Next.js request object
  * @returns JSON response with sourceId, chunksCreated, title, processingTimeMs
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check content type to determine if it's multipart (PDF) or JSON
+    // ── Optional auth: ADMIN / MANAGER only ──────────────────────────────────
+    let authContext: Awaited<ReturnType<typeof parseUserFromRequest>> | null = null;
+
+    if (request.headers.get('x-user-id')) {
+      try {
+        authContext = await parseUserFromRequest(request);
+      } catch (authErr) {
+        if (authErr instanceof AuthError) {
+          logger.warn(`Ingest auth failed: ${authErr.message}`);
+          return NextResponse.json(
+            { error: authErr.message, code: authErr.code },
+            { status: 401 },
+          );
+        }
+        throw authErr;
+      }
+
+      if (!validateRole(authContext.role, ['ADMIN', 'MANAGER'])) {
+        logger.warn(
+          `Ingest forbidden: user ${authContext.userId} has role ${authContext.role}`,
+        );
+        await logAudit(authContext.userId, authContext.orgId, 'INGEST_FORBIDDEN', undefined, {
+          role: authContext.role,
+        });
+        return NextResponse.json(
+          { error: 'Forbidden: ADMIN or MANAGER role required' },
+          { status: 403 },
+        );
+      }
+    }
+
+    // ── Parse request body ────────────────────────────────────────────────────
     const contentType = request.headers.get('content-type');
     let body: unknown;
     let fileBuffer: Buffer | undefined;
@@ -67,13 +112,14 @@ export async function POST(request: NextRequest) {
         const type = formData.get('type')?.toString();
         const content = formData.get('content')?.toString();
         const title = formData.get('title')?.toString();
+        const folderId = formData.get('folderId')?.toString();
 
         // Use original filename (stripped of extension) if no explicit title
         const inferredTitle = title || (pdfFile.name
           ? pdfFile.name.replace(/\.[^.]+$/, '')
           : undefined);
 
-        body = { type, content, title: inferredTitle };
+        body = { type, content, title: inferredTitle, folderId };
       } catch (error) {
         logger.warn(`FormData parsing error: ${error}`);
         return NextResponse.json(
@@ -94,7 +140,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate request with Zod
+    // ── Validate with Zod ─────────────────────────────────────────────────────
     const validation = ingestRequestSchema.safeParse(body);
     if (!validation.success) {
       const errors = validation.error.issues.map((issue) => ({
@@ -111,7 +157,7 @@ export async function POST(request: NextRequest) {
     const validatedData = validation.data as IngestRequest;
     logger.debug(`Ingest request validated: type=${validatedData.type}`);
 
-    // Build ingestion input
+    // ── Build ingestion input ─────────────────────────────────────────────────
     let ingestionInput: Parameters<typeof ingest>[0];
     if (validatedData.type === 'text') {
       ingestionInput = {
@@ -136,14 +182,55 @@ export async function POST(request: NextRequest) {
 
     logger.info(`Starting ingestion: ${validatedData.type}`);
 
-    // Call ingestion pipeline
+    // ── Call ingestion pipeline ───────────────────────────────────────────────
     const result = await ingest(ingestionInput);
 
     logger.info(
       `Ingestion successful: sourceId=${result.sourceId}, chunks=${result.chunksCreated}`,
     );
 
-    // Persist the original PDF file so it can be served later for preview
+    // ── Validate and store customMetadata ────────────────────────────────────
+    if (validatedData.customMetadata && Object.keys(validatedData.customMetadata).length > 0) {
+      try {
+        // When auth is present, validate against org's custom field definitions
+        if (authContext) {
+          const fieldDefs = await listCustomFields(authContext.orgId);
+          const errs = validateMetadata(
+            validatedData.customMetadata as Record<string, unknown>,
+            fieldDefs,
+          );
+          if (errs.length > 0) {
+            return NextResponse.json(
+              { error: 'Custom metadata validation failed', details: errs },
+              { status: 422 },
+            );
+          }
+        }
+        await updateSourceMetadata(
+          result.sourceId,
+          validatedData.customMetadata as Record<string, unknown>,
+        );
+        logger.info(`Stored custom metadata for source ${result.sourceId}`);
+      } catch (err) {
+        logger.warn(`Failed to store custom metadata: ${err}`);
+      }
+    }
+
+    // ── Assign to folder if provided ──────────────────────────────────────────
+    if (validatedData.folderId) {
+      try {
+        await prisma.source.update({
+          where: { id: result.sourceId },
+          data: { folderId: validatedData.folderId },
+        });
+        logger.info(`Assigned source ${result.sourceId} to folder ${validatedData.folderId}`);
+      } catch (err) {
+        // Non-fatal: source was ingested, just not assigned to the folder
+        logger.warn(`Failed to assign source to folder: ${err}`);
+      }
+    }
+
+    // ── Persist the original PDF file for preview ─────────────────────────────
     if (validatedData.type === 'pdf' && fileBuffer) {
       try {
         const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -159,6 +246,21 @@ export async function POST(request: NextRequest) {
         // Non-fatal: ingestion succeeded, file preview just won't be available
         logger.warn(`Failed to persist PDF file: ${err}`);
       }
+    }
+
+    // ── Audit log ─────────────────────────────────────────────────────────────
+    if (authContext) {
+      await logAudit(
+        authContext.userId,
+        authContext.orgId,
+        'UPLOAD',
+        { id: result.sourceId, type: 'SOURCE' },
+        {
+          contentType: validatedData.type,
+          chunksCreated: result.chunksCreated,
+          folderId: validatedData.folderId ?? null,
+        },
+      );
     }
 
     return NextResponse.json(result, { status: 200 });
