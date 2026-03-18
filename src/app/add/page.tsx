@@ -1,52 +1,70 @@
 'use client';
 
 import React, { useState } from 'react';
-import AddContentForm from '@/components/AddContentForm';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { AddContentForm } from '@/components/AddContentForm';
 import ReportBuilder from '@/components/ReportBuilder';
+import { AuthModal } from '@/components/AuthModal';
+import { useAuth } from '@/context/AuthContext';
 
 type Tab = 'upload' | 'report';
 
-/**
- * Add content page — tabs for uploading documents and creating reports.
- * In production, orgId and userId would come from the session.
- */
 export default function AddPage() {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('upload');
+  const [added, setAdded] = useState(false);
 
-  // These would come from session/auth context in production
-  const orgId = process.env.NEXT_PUBLIC_ORG_ID ?? 'default-org';
-  const userId = process.env.NEXT_PUBLIC_USER_ID ?? 'default-user';
+  if (isLoading) return null;
+  if (!user) return <AuthModal />;
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#F2F0EB] font-mono p-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 tracking-wide">Add Content</h1>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+          <Link href="/" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+            <ArrowLeft size={16} />
+          </Link>
+          <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Add Content</h1>
+        </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#2A2A2A] mb-6">
-          {(['upload', 'report'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 text-sm capitalize transition-colors
-                ${activeTab === tab
-                  ? 'border-b-2 border-[#C8922A] text-[#C8922A]'
-                  : 'text-gray-500 hover:text-[#F2F0EB]'}`}
-            >
-              {tab === 'upload' ? 'Upload' : 'Create Report'}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '28px' }}>
+          {(['upload', 'report'] as Tab[]).map((t) => (
+            <button key={t} onClick={() => setActiveTab(t)}
+              style={{
+                padding: '8px 20px', background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '14px', fontFamily: 'inherit', fontWeight: activeTab === t ? 600 : 400,
+                color: activeTab === t ? 'var(--accent)' : 'var(--text-muted)',
+                borderBottom: activeTab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                marginBottom: '-1px',
+              }}>
+              {t === 'upload' ? 'Upload Document' : 'Create Report'}
             </button>
           ))}
         </div>
 
-        {/* Tab content */}
-        {activeTab === 'upload' && <AddContentForm />}
+        {/* Content */}
+        {activeTab === 'upload' && (
+          <div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Add a URL, paste text, or upload a PDF to your knowledge base.
+            </p>
+            <AddContentForm
+              onClose={() => { window.location.href = '/'; }}
+              onSuccess={() => { window.location.href = '/'; }}
+              userId={user.userId}
+            />
+          </div>
+        )}
+
         {activeTab === 'report' && (
           <ReportBuilder
-            orgId={orgId}
-            userId={userId}
-            onReportCreated={(id) => {
-              console.log('Report created:', id);
-            }}
+            orgId={user.orgId}
+            userId={user.userId}
+            onReportCreated={() => { window.location.href = '/reports'; }}
           />
         )}
       </div>

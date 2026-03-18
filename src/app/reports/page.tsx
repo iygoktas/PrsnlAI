@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Trash2, Pencil, RefreshCw } from 'lucide-react';
+import { FileText, Download, Trash2, Pencil, RefreshCw, Plus, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import ReportBuilder from '@/components/ReportBuilder';
+import { AuthModal } from '@/components/AuthModal';
+import { useAuth } from '@/context/AuthContext';
 
 interface Report {
   id: string;
@@ -13,29 +16,21 @@ interface Report {
   createdAt: string;
 }
 
-/**
- * Reports list page — view, download, and manage saved reports.
- */
 export default function ReportsPage() {
-  const orgId = process.env.NEXT_PUBLIC_ORG_ID ?? 'default-org';
-  const userId = process.env.NEXT_PUBLIC_USER_ID ?? 'default-user';
-
+  const { user, isLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingReport, setEditingReport] = useState<string | null>(null);
+  const [showNewBuilder, setShowNewBuilder] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetchReports = async () => {
+  const fetchReports = async (orgId: string) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/reports?orgId=${encodeURIComponent(orgId)}`);
-      if (!res.ok) {
-        setError(`Failed to load reports (${res.status})`);
-        return;
-      }
+      if (!res.ok) { setError(`Failed to load reports (${res.status})`); return; }
       const data = await res.json();
       setReports(data.reports ?? []);
     } catch (err) {
@@ -45,7 +40,12 @@ export default function ReportsPage() {
     }
   };
 
-  useEffect(() => { void fetchReports(); }, [orgId]);
+  useEffect(() => {
+    if (user) void fetchReports(user.orgId);
+  }, [user]);
+
+  if (isLoading) return null;
+  if (!user) return <AuthModal />;
 
   const handleGeneratePdf = async (report: Report) => {
     setGeneratingId(report.id);
@@ -53,15 +53,9 @@ export default function ReportsPage() {
       const res = await fetch('/api/reports/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportId: report.id, userId }),
+        body: JSON.stringify({ reportId: report.id, userId: user.userId }),
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error ?? 'PDF generation failed.');
-        return;
-      }
-
+      if (!res.ok) { alert((await res.json()).error ?? 'PDF generation failed.'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -76,130 +70,116 @@ export default function ReportsPage() {
     }
   };
 
-  const handleDelete = async (reportId: string) => {
+  const handleDelete = (reportId: string) => {
     if (!confirm('Delete this report? This cannot be undone.')) return;
-    setDeletingId(reportId);
-    try {
-      // Would need DELETE /api/reports/[id] — for now just remove from local state
-      setReports((prev) => prev.filter((r) => r.id !== reportId));
-    } finally {
-      setDeletingId(null);
-    }
+    setReports((prev) => prev.filter((r) => r.id !== reportId));
   };
 
   function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
-    });
+    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#F2F0EB] font-mono p-6">
-      <div className="max-w-4xl mx-auto">
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 24px' }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold tracking-wide">Reports</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={() => void fetchReports()}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-[#2A2A2A] rounded hover:bg-[#1A1A1A] text-sm"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Link href="/" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+              <ArrowLeft size={16} />
+            </Link>
+            <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Reports</h1>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => void fetchReports(user.orgId)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
-            <a
-              href="/add"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C8922A] text-black rounded text-sm font-medium hover:bg-[#d9a33b]"
-            >
-              <FileText size={14} />
+            <button onClick={() => { setShowNewBuilder(true); setEditingReport(null); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--accent)', color: '#000', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit' }}>
+              <Plus size={13} />
               New Report
-            </a>
+            </button>
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-4 p-3 border border-red-700 bg-red-950 rounded text-red-300 text-xs">
+          <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', fontSize: '13px', color: '#f87171' }}>
             {error}
           </div>
         )}
 
-        {/* Edit mode */}
-        {editingReport && (
-          <div className="mb-6 p-4 border border-[#2A2A2A] rounded-lg bg-[#1A1A1A]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-semibold text-[#C8922A]">Edit Report</h2>
-              <button onClick={() => setEditingReport(null)} className="text-xs text-gray-400 hover:text-[#F2F0EB]">
-                Cancel ✕
-              </button>
+        {/* New Report Builder */}
+        {showNewBuilder && (
+          <div style={{ marginBottom: '24px', padding: '24px', border: '1px solid var(--border)', borderRadius: '12px', backgroundColor: 'var(--bg-surface)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>New Report</h2>
+              <button onClick={() => setShowNewBuilder(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '18px', lineHeight: 1, padding: 0 }}>×</button>
             </div>
-            <ReportBuilder
-              orgId={orgId}
-              userId={userId}
-              onReportCreated={() => {
-                setEditingReport(null);
-                void fetchReports();
-              }}
-            />
+            <ReportBuilder orgId={user.orgId} userId={user.userId}
+              onReportCreated={() => { setShowNewBuilder(false); void fetchReports(user.orgId); }} />
+          </div>
+        )}
+
+        {/* Edit Report Builder */}
+        {editingReport && (
+          <div style={{ marginBottom: '24px', padding: '24px', border: '1px solid var(--accent)', borderRadius: '12px', backgroundColor: 'var(--bg-surface)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: 'var(--accent)' }}>Edit Report</h2>
+              <button onClick={() => setEditingReport(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '18px', lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+            <ReportBuilder orgId={user.orgId} userId={user.userId}
+              onReportCreated={() => { setEditingReport(null); void fetchReports(user.orgId); }} />
           </div>
         )}
 
         {/* Reports list */}
         {loading ? (
-          <p className="text-center text-gray-500 text-sm py-12">Loading reports…</p>
-        ) : reports.length === 0 ? (
-          <div className="text-center py-16 text-gray-600">
-            <FileText size={48} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No reports yet.</p>
-            <a href="/add" className="text-xs text-[#C8922A] hover:underline mt-2 inline-block">
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', padding: '48px 0' }}>Loading reports…</p>
+        ) : reports.length === 0 && !showNewBuilder ? (
+          <div style={{ textAlign: 'center', padding: '64px 0', color: 'var(--text-muted)' }}>
+            <FileText size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+            <p style={{ fontSize: '14px', margin: '0 0 8px' }}>No reports yet.</p>
+            <button onClick={() => setShowNewBuilder(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', padding: 0 }}>
               Create your first report →
-            </a>
+            </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {reports.map((report) => (
-              <div
-                key={report.id}
-                className="flex items-center gap-4 p-4 border border-[#2A2A2A] rounded-lg bg-[#1A1A1A] hover:border-[#3A3A3A] transition-colors"
-              >
-                <FileText size={20} className="text-[#C8922A] shrink-0" />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#F2F0EB] truncate">{report.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {Array.isArray(report.selectedSourceIds) ? report.selectedSourceIds.length : 0} sources
-                    {' · '}
-                    Created {formatDate(report.createdAt)}
-                    {report.generatedAt && ` · PDF generated ${formatDate(report.generatedAt)}`}
+              <div key={report.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px', border: '1px solid var(--border)', borderRadius: '10px', backgroundColor: 'var(--bg-surface)', transition: 'border-color 150ms ease' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent-dim)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'; }}>
+                <FileText size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <p style={{ margin: '0 0 2px', fontSize: '14px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{report.name}</p>
+                  <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {Array.isArray(report.selectedSourceIds) ? report.selectedSourceIds.length : 0} sources · {formatDate(report.createdAt)}
+                    {report.generatedAt && ` · PDF ${formatDate(report.generatedAt)}`}
                   </p>
                 </div>
-
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => void handleGeneratePdf(report)}
-                    disabled={generatingId === report.id}
-                    title="Download PDF"
-                    aria-label={`Download PDF for ${report.name}`}
-                    className="p-1.5 border border-[#2A2A2A] rounded hover:bg-[#2A2A2A] text-gray-400 hover:text-[#F2F0EB] disabled:opacity-40 transition-colors"
-                  >
-                    <Download size={14} />
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                  <button onClick={() => void handleGeneratePdf(report)} disabled={generatingId === report.id} title="Download PDF"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--border)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 150ms ease' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}>
+                    <Download size={13} />
                   </button>
-                  <button
-                    onClick={() => setEditingReport(report.id)}
-                    title="Edit report"
-                    aria-label={`Edit ${report.name}`}
-                    className="p-1.5 border border-[#2A2A2A] rounded hover:bg-[#2A2A2A] text-gray-400 hover:text-[#F2F0EB] transition-colors"
-                  >
-                    <Pencil size={14} />
+                  <button onClick={() => setEditingReport(report.id)} title="Edit"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--border)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 150ms ease' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}>
+                    <Pencil size={13} />
                   </button>
-                  <button
-                    onClick={() => void handleDelete(report.id)}
-                    disabled={deletingId === report.id}
-                    title="Delete report"
-                    aria-label={`Delete ${report.name}`}
-                    className="p-1.5 border border-red-900 rounded hover:bg-red-950 text-red-500 hover:text-red-300 disabled:opacity-40 transition-colors"
-                  >
-                    <Trash2 size={14} />
+                  <button onClick={() => handleDelete(report.id)} title="Delete"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '6px', border: '1px solid var(--border)', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 150ms ease' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--error)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--error)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}>
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>

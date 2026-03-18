@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     // ── Call search pipeline ─────────────────────────────────────────────────
     const result = await search(validatedData.query, {
-      sourceTypes: filterInput?.type as Prisma.SourceType[] | undefined,
+      sourceTypes: filterInput?.type as string[] | undefined,
       dateFrom,
       dateTo,
       limit: validatedData.limit,

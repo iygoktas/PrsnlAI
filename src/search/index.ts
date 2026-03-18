@@ -9,7 +9,7 @@ import type { Prisma } from '@prisma/client';
  * Options for the search operation.
  */
 export interface SearchOptions {
-  sourceTypes?: Prisma.SourceType[];
+  sourceTypes?: string[];
   dateFrom?: Date;
   dateTo?: Date;
   limit?: number;

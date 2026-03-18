@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 interface AddContentFormProps {
   onClose: () => void;
   onSuccess: () => void;
+  userId?: string;
 }
 
 type Tab = 'url' | 'text' | 'pdf';
@@ -13,7 +14,7 @@ type Tab = 'url' | 'text' | 'pdf';
 /**
  * AddContentForm — modal overlay for ingesting new content
  */
-export function AddContentForm({ onClose, onSuccess }: AddContentFormProps) {
+export function AddContentForm({ onClose, onSuccess, userId }: AddContentFormProps) {
   const [activeTab, setActiveTab] = useState<Tab>('url');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,14 +57,14 @@ export function AddContentForm({ onClose, onSuccess }: AddContentFormProps) {
           formData.append('type', 'pdf');
           formData.append('file', fileValue);
           setProgress(30);
-          response = await fetch('/api/ingest', { method: 'POST', body: formData });
+          response = await fetch('/api/ingest', { method: 'POST', body: formData, headers: userId ? { 'x-user-id': userId } : {} });
         } else {
           const type = activeTab;
           const content = activeTab === 'url' ? urlValue.trim() : textValue.trim();
           setProgress(30);
           response = await fetch('/api/ingest', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(userId ? { 'x-user-id': userId } : {}) },
             body: JSON.stringify({ type, content }),
           });
         }

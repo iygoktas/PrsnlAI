@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     const safeFilename = report.name.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

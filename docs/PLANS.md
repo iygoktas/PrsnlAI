@@ -455,4 +455,252 @@
 10. **Install lucide-react**: Run `npm install lucide-react` for type icons (Globe, FileText, AlignLeft)
 11. **Tests & commit**: Ensure all tests still pass; git commit with type `feat(ui)`
 
+## T-041: Custom Metadata Fields + Advanced Filtering 
 
+You are implementing audit logging for KVKK (Turkish data protection) compliance.
+
+CONTEXT:
+- Every action must be logged: READ, SEARCH, SELECT_FOR_REPORT, UPLOAD, DELETE
+- Logs must include: who, what, when, which resource
+- Organizations need to export audit logs
+- Logs help prove KVKK compliance
+
+TASK:
+Create audit logging system:
+
+1. Update prisma/schema.prisma:
+   - Add AuditLog model: id, userId, orgId, action, resourceId, resourceType, timestamp, details (JSON)
+   - Add indexes on userId, orgId, timestamp for fast queries
+
+2. Create src/storage/audit.ts:
+   - logAudit(userId: string, orgId: string, action: string, resource?: { id, type }, details?: object): Promise<void>
+   - getAuditLogs(orgId: string, filters?: { userId?, action?, dateRange?, resourceType? }): Promise<AuditLog[]>
+   - exportAuditLogs(orgId: string, format: 'json' | 'csv'): Promise<Buffer>
+
+3. Create src/lib/audit-logger.ts:
+   - Wrapper for logging that gets called before/after key operations
+   - captureAction(action: string, fn: () => Promise<T>): Promise<T>
+   - Logs start, end, duration, success/failure
+
+4. Update all API routes to log:
+   - POST /api/ingest → UPLOAD action
+   - POST /api/search → SEARCH action (include query, result count)
+   - POST /api/reports/generate → GENERATE_REPORT action
+   - DELETE /api/sources/[id] → DELETE action
+   - Every source/folder access → READ action
+
+5. Create src/app/api/audit/route.ts:
+   - GET /api/audit (list audit logs)
+     * Query params: limit, offset, action, userId, dateFrom, dateTo
+     * Return paginated logs
+     * Only ADMIN can view
+   
+   - POST /api/audit/export
+     * Body: { format: 'json' | 'csv', filters?: object }
+     * Returns file download
+     * Only ADMIN can export
+
+6. Create React component:
+   - AuditLogViewer.tsx: ADMIN only
+   - Show logs in table: timestamp, user, action, resource, details
+   - Filter by date range, user, action
+   - Export button
+
+7. Write integration tests:
+   - Upload document → UPLOAD logged
+   - Search → SEARCH logged with query
+   - Generate report → GENERATE_REPORT logged
+   - View logs → returns correct entries
+   - Export logs → CSV/JSON format correct
+   - Unauthorized users cannot view logs
+
+KVKK COMPLIANCE:
+- Logs kept for 1 year minimum
+- Data subject can request their logs (right to access)
+- Cannot delete individual logs (immutable)
+- Sensitive personal data hashed in logs
+- Regular backups of audit logs
+
+IMPORTANT:
+- Log performance: async, non-blocking
+- Use database indexes for fast queries
+- Include timing information
+- Privacy: don't log sensitive content (passwords, API keys)
+- Clean up old logs (>1 year) automatically
+```
+
+---
+## T-042: Checkbox UI + Folder Structure
+
+CONTEXT:
+- Users see folder structure (tree view)
+- Each document has checkbox for report selection
+- Folders have checkbox to select/deselect all children
+- Public vs Private folders have different icons
+- Real-time selected count display
+
+TASK:
+Create folder navigation UI:
+
+1. Create components/FolderTree.tsx:
+   - Recursive component for nested folders
+   - Props: folder, level, onSelectFolder, onSelectSource, selectedSourceIds
+   - Show:
+     * Folder icon (public = globe, private = lock)
+     * Folder name
+     * Chevron to expand/collapse
+     * Checkbox to select all sources in folder
+     * Count of selected sources: (3/5)
+   - Styling: indentation by level, hover effects, loading states
+   - Expand/collapse state management (useCallback for performance)
+
+2. Create components/DocumentItem.tsx:
+   - Props: source, isSelected, onSelect
+   - Show:
+     * Checkbox
+     * Document icon (PDF, URL, TEXT)
+     * Title
+     * Date
+     * Type badge
+     * Similarity score (if from search results)
+   - Styling: selected = highlight background
+
+3. Create components/SourceSelector.tsx:
+   - Main component combining FolderTree + selection logic
+   - Props: orgId, onSelectionChange(sourceIds: string[])
+   - State: selectedSourceIds, expandedFolders, search filter
+   - Features:
+     * Search documents within folders
+     * Select all in folder (checkbox next to folder)
+     * Select individual documents
+     * Show selected count: "4 documents selected"
+     * Clear selection button
+     * Deselect button
+   - Performance: virtualization for large lists (react-window)
+
+4. Create components/ReportBuilder.tsx:
+   - Workflow: Select documents → Add custom metadata → Generate PDF
+   - Sections:
+     * Report name input
+     * SourceSelector component
+     * Metadata form (show custom fields)
+     * Filter section (by date, project, etc)
+     * Preview selected documents
+     * Generate button
+   - Show:
+     * "X documents will be in report"
+     * Estimated PDF size
+     * Generation time estimate
+
+5. Create src/app/add/page.tsx updates:
+   - Add tabs: "Upload" | "Create Report"
+   - Report tab shows ReportBuilder
+
+6. Create src/app/reports/page.tsx:
+   - List saved reports
+   - Show: name, author, selected count, created date
+   - Actions: view, download PDF, edit, delete
+   - Open ReportBuilder in edit mode when clicking edit
+
+7. Write React tests:
+   - Toggle folder checkbox → all children selected
+   - Unselect one source → folder checkbox becomes indeterminate
+   - Search filters documents
+   - Selected count updates correctly
+   - Large folder (1000 docs) renders efficiently
+
+STYLING:
+- Use Tailwind for consistent design
+- Icons: lucide-react
+- Colors:
+  * Public folder: blue (globe icon)
+  * Private folder: red (lock icon)
+  * Selected item: bg-blue-100, border-blue-500
+  * Hover: bg-gray-100
+  * Checked: text-blue-600
+- Spacing: consistent with existing UI
+
+IMPORTANT:
+- Responsive (mobile + desktop)
+- Accessible (ARIA labels, keyboard navigation)
+- Performance: memoization, virtualization for large lists
+- Clear selection state visually
+- Feedback on click/selection
+```
+
+---
+
+# T-043 Integration Tests
+
+You are writing end-to-end integration tests for the complete folder + report workflow.
+
+CONTEXT:
+- Already have Jest + TypeScript setup
+- Need to test: folder creation → document upload → document selection → report generation
+- Use mocked Prisma + mocked LLM
+- Test both happy path and error cases
+
+TASK:
+Create comprehensive integration tests in tests/integration/folder-report.test.ts:
+
+1. Setup:
+   - Create test org with ADMIN + VIEWER users
+   - Create folder structure (Public, Private, Projects/ProjectA)
+   - Mock Prisma all methods
+   - Mock embedding service
+   - Mock PDF generation
+
+2. Test Suite: Folder Management
+   - "should create folder hierarchy" → create nested folders
+   - "should move document between folders" → POST /api/folders/[id]/move-sources
+   - "should delete folder with cascading" → sources in deleted folder → orphaned/deleted
+   - "should validate permissions on modify" → VIEWER tries to delete folder → 403
+
+3. Test Suite: Document Selection
+   - "should select individual document" → toggle checkbox
+   - "should select all in folder" → folder checkbox → all children selected
+   - "should deselect when child unselected" → folder checkbox → indeterminate
+   - "should prevent private selection for VIEWER" → private folder → checkbox disabled
+   - "should allow public selection for VIEWER" → public folder → checkbox enabled
+
+4. Test Suite: Report Generation
+   - "should create report with selected sources" → POST /api/reports
+   - "should generate PDF with correct content" → GET /api/reports/[id]/generate → PDF contains all selected docs
+   - "should include metadata in PDF" → custom fields appear in report
+   - "should filter sources by date range" → filter applied in report
+   - "should prevent unauthorized users" → VIEWER tries to include ADMIN-only docs → filtered out
+
+5. Test Suite: Audit Logging
+   - "should log folder creation" → create folder → AuditLog.action = 'CREATE_FOLDER'
+   - "should log document selection" → select doc → AuditLog.action = 'SELECT_FOR_REPORT'
+   - "should log report generation" → generate → AuditLog.action = 'GENERATE_REPORT' with sourceCount
+   - "should not log for failed operations" → invalid request → no log created
+
+6. Test Suite: Custom Metadata
+   - "should filter by custom field" → POST /api/search { filters: { projectId: "ABC" } }
+   - "should validate metadata on upload" → POST /api/ingest with invalid custom value → 422
+   - "should include metadata in report" → PDF shows custom field values
+   - "should support multiple filter criteria" → filter by project AND date
+
+7. Test Suite: Performance
+   - "should search 1000 documents < 500ms" → simulate large dataset
+   - "should generate PDF with 100 sources < 5s"
+   - "should list large folder without lag" → memoization works
+
+8. Test Suite: Error Handling
+   - "should handle missing folder" → 404
+   - "should handle invalid report ID" → 404
+   - "should handle permission denied" → 403
+   - "should handle database errors" → 500 with proper logging
+
+Run tests:
+npm test -- --testPathPattern=folder-report
+
+IMPORTANT:
+- Each test should be independent (cleanup after)
+- Use consistent test data (factories/fixtures)
+- Test both success AND failure paths
+- Verify logs are created correctly
+- Mock all external services (OpenAI, PDF lib)
+- Use describe() to organize tests
+- Clear assertions (expect().toEqual(), expect().toHaveBeenCalledWith())

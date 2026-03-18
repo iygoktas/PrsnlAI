@@ -44,7 +44,7 @@ export async function logAudit(
         action,
         resourceId: resource?.id ?? null,
         resourceType: resource?.type ?? null,
-        details: details ?? null,
+        details: (details ?? null) as never,
       },
     });
     logger.debug(`Audit: [${action}] user=${userId} org=${orgId}`);

@@ -1,9 +1,9 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, SourceType } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 export interface CreateSourceInput {
-  type: Prisma.SourceType;
+  type: SourceType;
   title: string;
   url?: string;
   filePath?: string;
@@ -11,7 +11,7 @@ export interface CreateSourceInput {
 }
 
 export interface SourceFilter {
-  type?: Prisma.SourceType[];
+  type?: SourceType[];
   dateFrom?: Date;
   dateTo?: Date;
 }
@@ -95,6 +95,60 @@ export async function listSources(
     return sources;
   } catch (error) {
     logger.error(`Failed to list sources: ${error}`);
+    throw error;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dbAny = prisma as any;
+
+/**
+ * Updates the customMetadata JSON field on a source.
+ * Merges with any existing metadata (new keys overwrite old ones).
+ *
+ * Uses `dbAny` because `customMetadata` is a new schema field that will only
+ * appear in Prisma's generated types after `prisma generate` is run.
+ */
+export async function updateSourceMetadata(
+  sourceId: string,
+  customMetadata: Record<string, unknown>,
+): Promise<Prisma.SourceGetPayload<object>> {
+  try {
+    const existing = await dbAny.source.findUnique({ where: { id: sourceId } });
+    if (!existing) {
+      throw new Error(`Source ${sourceId} not found`);
+    }
+    const merged = {
+      ...(existing.customMetadata as Record<string, unknown> ?? {}),
+      ...customMetadata,
+    };
+    const source = await dbAny.source.update({
+      where: { id: sourceId },
+      data: { customMetadata: merged },
+    });
+    logger.info(`Updated metadata for source ${sourceId}`);
+    return source as Prisma.SourceGetPayload<object>;
+  } catch (error) {
+    logger.error(`Failed to update source metadata ${sourceId}: ${error}`);
+    throw error;
+  }
+}
+
+/**
+ * Returns the customMetadata JSON for a source, or {} if not set.
+ */
+export async function getSourceMetadata(sourceId: string): Promise<Record<string, unknown>> {
+  try {
+    const source = await dbAny.source.findUnique({
+      where: { id: sourceId },
+      select: { customMetadata: true },
+    });
+    if (!source) {
+      throw new Error(`Source ${sourceId} not found`);
+    }
+    return (source.customMetadata as Record<string, unknown>) ?? {};
+  } catch (error) {
+    logger.error(`Failed to get source metadata ${sourceId}: ${error}`);
     throw error;
   }
 }

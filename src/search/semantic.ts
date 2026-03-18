@@ -13,7 +13,7 @@ export interface SearchResult {
   sourceId: string;
   title: string;
   url?: string;
-  type: Prisma.SourceType;
+  type: string;
   excerpt: string;
   score: number;
   chunkIndex: number;
@@ -25,7 +25,7 @@ export interface SearchResult {
  * Options for semantic search.
  */
 export interface SemanticSearchOptions {
-  sourceTypes?: Prisma.SourceType[];
+  sourceTypes?: string[];
   dateFrom?: Date;
   dateTo?: Date;
   topK?: number;

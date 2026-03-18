@@ -16,7 +16,7 @@ import { updateSourceMetadata } from '@/storage/metadata';
 /**
  * Zod schema for validating ingest API requests.
  */
-const customMetadataSchema = z.record(z.union([z.string(), z.number(), z.boolean()])).optional();
+const customMetadataSchema = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional();
 
 const ingestRequestSchema = z.union([
   z.object({

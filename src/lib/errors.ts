@@ -39,3 +39,45 @@ export class EmbeddingError extends Error {
     Object.setPrototypeOf(this, EmbeddingError.prototype);
   }
 }
+
+/**
+ * Custom error class for report operations.
+ */
+export class ReportError extends Error {
+  code: string;
+
+  constructor(message: string, code: string = 'UNKNOWN') {
+    super(message);
+    this.name = 'ReportError';
+    this.code = code;
+    Object.setPrototypeOf(this, ReportError.prototype);
+  }
+}
+
+/**
+ * Custom error class for authentication and authorization failures.
+ */
+export class AuthError extends Error {
+  code: string;
+
+  constructor(message: string, code: string = 'UNKNOWN') {
+    super(message);
+    this.name = 'AuthError';
+    this.code = code;
+    Object.setPrototypeOf(this, AuthError.prototype);
+  }
+}
+
+/**
+ * Custom error class for folder and permission operations.
+ */
+export class FolderError extends Error {
+  code: string;
+
+  constructor(message: string, code: string = 'UNKNOWN') {
+    super(message);
+    this.name = 'FolderError';
+    this.code = code;
+    Object.setPrototypeOf(this, FolderError.prototype);
+  }
+}

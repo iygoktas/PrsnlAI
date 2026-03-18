@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
 
     logger.info(`Audit export: org=${authContext.orgId} format=${format} user=${authContext.userId}`);
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': contentType,

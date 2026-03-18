@@ -49,12 +49,14 @@ model Report {
 }
 
 model User {
-  id      String   @id @default(cuid())
-  email   String   @unique
-  role    UserRole
-  orgId   String
-  org     Organization @relation(fields: [orgId], references: [id])
-  folders Folder[]
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String   @default("")
+  passwordHash String   @default("")
+  role         UserRole
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id])
+  folders      Folder[]
 
   @@index([orgId])
 }
